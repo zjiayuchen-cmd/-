@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>名场面 · 产品需求文档（PRD）</title>
+<style>
+  :root {
+    --ink: #1f1b18;
+    --ink2: #453e37;
+    --muted: #7a7168;
+    --line: #ddd4c9;
+    --line2: #efe8df;
+    --brand: #c8452f;
+    --brand-soft: #fdf3ef;
+    --code-bg: #f7f4f0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: "SimSun", "宋体", "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+    background: #f2eee8;
+    color: var(--ink);
+    line-height: 1.75;
+    font-size: 13px;
+    padding: 24px 14px 60px;
+  }
+  .paper {
+    max-width: 800px; margin: 0 auto; background: #fff;
+    padding: 46px 52px 54px;
+    box-shadow: 0 2px 20px rgba(31,27,24,.10), 0 1px 3px rgba(31,27,24,.06);
+    border-radius: 3px;
+  }
+
+  /* 封面 */
+  .cover { text-align: center; padding-bottom: 22px; border-bottom: 3px double var(--line); margin-bottom: 26px; }
+  .cover .kicker { font-size: 10px; letter-spacing: 4px; color: var(--muted); margin-bottom: 12px; }
+  .cover h1 { font-size: 24px; font-weight: 700; letter-spacing: 2px; line-height: 1.5; }
+  .cover .lead { margin-top: 14px; font-size: 12.5px; color: var(--ink2); line-height: 1.85; }
+  .cover .lead strong { color: var(--brand); }
+  .meta { margin: 18px auto 0; border-collapse: collapse; font-size: 11.5px; width: 100%; max-width: 500px; }
+  .meta td { border: 1px solid var(--line); padding: 5px 11px; }
+  .meta td:first-child { background: var(--code-bg); color: var(--muted); width: 90px; white-space: nowrap; }
+
+  /* 标题 */
+  h2 {
+    font-size: 16px; font-weight: 700; letter-spacing: .5px;
+    margin: 30px 0 12px; padding-bottom: 7px;
+    border-bottom: 2px solid var(--ink);
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  h2 .no { color: var(--brand); font-size: 16.5px; font-weight: 700; }
+  h3 { font-size: 13.5px; font-weight: 700; margin: 19px 0 8px; padding-left: 9px; border-left: 3px solid var(--brand); line-height: 1.5; }
+  h4 { font-size: 12.5px; font-weight: 700; margin: 15px 0 7px; color: var(--ink2); }
+
+  p { margin: 7px 0; }
+  strong { font-weight: 700; }
+
+  /* 表格 */
+  table.data { width: 100%; border-collapse: collapse; margin: 11px 0; font-size: 11.5px; }
+  table.data th { background: #3a332c; color: #fff; font-weight: 700; padding: 6px 9px; text-align: left; border: 1px solid #3a332c; white-space: nowrap; }
+  table.data td { padding: 6px 9px; border: 1px solid var(--line); vertical-align: top; line-height: 1.7; }
+  table.data tr:nth-child(even) td { background: #faf8f5; }
+
+  /* 引用 */
+  blockquote {
+    margin: 11px 0; padding: 9px 14px;
+    background: var(--brand-soft); border-left: 3px solid var(--brand);
+    color: var(--ink2); font-size: 12px; line-height: 1.75;
+    border-radius: 0 3px 3px 0;
+  }
+  blockquote strong { color: var(--brand); }
+
+  /* 代码 */
+  pre {
+    background: var(--code-bg); border: 1px solid var(--line); border-radius: 3px;
+    padding: 12px 14px; margin: 10px 0;
+    font-family: "Consolas", "Monaco", "Courier New", monospace;
+    font-size: 11px; line-height: 1.65; color: var(--ink2);
+    overflow-x: auto; white-space: pre;
+  }
+  code {
+    font-family: "Consolas", "Monaco", "Courier New", monospace;
+    font-size: .92em; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 3px; color: var(--brand); border: 1px solid var(--line2);
+  }
+  pre code { background: none; border: none; padding: 0; color: inherit; }
+
+  ul, ol { margin: 8px 0 8px 22px; }
+  li { margin: 4px 0; line-height: 1.75; }
+  hr { border: none; border-top: 1px solid var(--line2); margin: 22px 0; }
+
+  /* 备注 */
+  .note {
+    margin-top: 32px; padding: 18px 22px; text-align: center;
+    background: linear-gradient(135deg, #fffaf6, #fdf3ef);
+    border: 1px solid #f0ddd4; border-radius: 5px;
+  }
+  .note .t { font-size: 11px; letter-spacing: 3px; color: var(--muted); }
+  .note .n { font-size: 15px; font-weight: 700; letter-spacing: 1.5px; margin-top: 9px; color: var(--ink); }
+
+  .foot { text-align: center; color: #a89e93; font-size: 10.5px; margin-top: 26px; letter-spacing: 1px; }
+
+  /* 打印 */
+  @media print {
+    body { background: #fff; padding: 0; font-size: 10pt; }
+    .paper { box-shadow: none; padding: 0; max-width: none; }
+    h2, h3 { page-break-after: avoid; break-after: avoid; }
+    table.data, pre, blockquote, .note { page-break-inside: avoid; break-inside: avoid; }
+    @page { margin: 16mm 15mm; }
+  }
+
+  /* 移动端 */
+  @media (max-width: 640px) {
+    body { padding: 0; font-size: 12.5px; }
+    .paper { padding: 24px 16px 36px; border-radius: 0; box-shadow: none; }
+    .cover h1 { font-size: 19px; letter-spacing: 1px; }
+    h2 { font-size: 14.5px; }
+    h3 { font-size: 13px; }
+    table.data { font-size: 10.5px; }
+    table.data th, table.data td { padding: 5px 7px; }
+    table.data th { white-space: normal; }
+    pre { font-size: 10px; padding: 10px 11px; }
+    blockquote { padding: 8px 12px; font-size: 11.5px; }
+  }
+</style>
+</head>
+<body>
+<div class="paper">
+
+  <div class="cover">
+    <h1>名场面 · 产品需求文档</h1>
+    <div class="lead">
+      一句话定义：<strong>把每个人的名字，变成一场猜谜。</strong>
+    </div>
+  </div>
+
+  <h2><span class="no">1</span>问题定义</h2>
+
+  <h3>1.1 问题陈述</h3>
+  <p>在黑客松、研学营、组队工作坊等<strong>短周期高强度协作场景</strong>中，开场 10 分钟内的破冰质量直接决定后续协作效率，但现有方式普遍失效：</p>
+  <table class="data">
+    <tr><th style="width:170px">现有做法</th><th>失效点</th></tr>
+    <tr><td>轮流自我介绍</td><td>被动听 + 信息过载，3 分钟后几乎全忘；内向者应付了事</td></tr>
+    <tr><td>桌游 / 真心话大冒险</td><td>需要道具与场地，冒犯风险高，与"记住彼此"目标脱节</td></tr>
+    <tr><td>直接开工不做破冰</td><td>后续反复出现"那个谁""黄衣服那个"，协作成本持续外溢</td></tr>
+  </table>
+  <p><strong>核心矛盾</strong>：名字是最需要被记住的信息，却是最抽象、最缺乏记忆抓手的信息——<strong>记住"张三"远难于记住"一个会弹吉他、养了两只猫的人"</strong>。</p>
+
+  <h3>1.2 问题本质</h3>
+  <p>这不是"气氛不够热闹"的问题，而是<strong>信息编码方式错误</strong>的问题。传统的自我介绍把大量抽象标签一次性灌给听众，认知负荷高且无检索线索；而记忆术的基本原理是<strong>为抽象信息附加具体视觉锚点</strong>（Baker/baker 悖论：附带形象的名词回忆率显著高于抽象名词）。</p>
+
+  <h3>1.3 机会点</h3>
+  <p><strong>用 AI 把"名字 → 视觉意象"的联想工作自动化。</strong>谐音/会意的图像化联想原本需要人的脑洞（这也是它一直只在小范围口耳相传的原因），大模型让这件事可以实时、批量、零门槛地完成，使一个流行于学生课间的土办法变成可规模化复制的产品。</p>
+
+  <h3>1.4 验证依据（真实案例）</h3>
+  <table class="data">
+    <tr><th style="width:140px">案例</th><th style="width:210px">场景</th><th>结果</th></tr>
+    <tr><td>高中课间活动</td><td>数学老师组织，全班组名同学生成图片</td><td>全班参与热烈，外班同学聚集围观</td></tr>
+    <tr><td>研学营首日任务</td><td>要求记住全组人名字，采用本方法</td><td>组员主动开始猜图、互相确认，<strong>在玩的过程中自然记住全组名字并熟络</strong></td></tr>
+  </table>
+  <blockquote>方法在无产品、纯手工的条件下已被验证两次有效；本产品要做的是<strong>把手工环节自动化，并补齐游戏闭环</strong>。</blockquote>
+
+  <hr>
+
+  <h2><span class="no">2</span>目标用户与场景</h2>
+
+  <h3>2.1 目标用户</h3>
+  <h4>主用户：活动组织者（房主）</h4>
+  <ul>
+    <li>黑客松队长 / 研学营带队老师 / 团建组织者 / 工作坊主持人</li>
+    <li>特征：有明确的"让大家快速熟起来"的诉求，愿意花 5–12 分钟，但不想准备道具、不想当主持人</li>
+    <li>核心诉求：<strong>低准备成本 + 现场效果好 + 不尴尬</strong></li>
+  </ul>
+  <h4>次用户：参与者（组员）</h4>
+  <ul>
+    <li>特征：彼此陌生，多数是内向者，不喜欢被点名表演</li>
+    <li>核心诉求：<strong>参与门槛低、不被冒犯、能有个说得出口的理由去认识别人</strong></li>
+  </ul>
+
+  <h3>2.2 核心使用场景</h3>
+  <table class="data">
+    <tr><th style="width:160px">场景</th><th style="width:100px">组规模</th><th style="width:100px">时长</th><th>关键约束</th></tr>
+    <tr><td><strong>黑客松开场</strong>（主场景）</td><td>4–6 人/组</td><td>8–12 分钟</td><td>有投屏，之后立刻要分工协作</td></tr>
+    <tr><td>研学营首日</td><td>4–8 人</td><td>10–15 分钟</td><td>可能无投屏，需手机传阅兜底</td></tr>
+    <tr><td>团队 / 班级破冰</td><td>6–10 人</td><td>10–15 分钟</td><td>社交风险敏感，需强防冒犯</td></tr>
+  </table>
+
+  <h3>2.3 用户旅程（黑客松开场场景）</h3>
+  <pre>09:00  队长打开链接创建房间，把二维码投屏
+09:01  组员扫码 → 输入名字 → 选 3 句自我介绍（2 真 1 假）
+09:03  全员就绪，队长点开始；AI 生成中，大家闲聊
+09:04  生成完成，进入竞猜：4 张图拼出一个名字，全场抢答
+09:08  名字全部猜中；每题揭晓后追问"两真一假"彩蛋
+09:11  本人就真的那条开讲 30 秒，其他人追问
+09:12  生成"谐音全家福"海报，扫码保存
+09:13  队长：好，我们知道谁会写前端了 —— 开工</pre>
+
+  <hr>
+
+  <h2><span class="no">3</span>核心功能与流程</h2>
+
+  <h3>3.1 功能架构（四个模块）</h3>
+  <pre>名场面
+├── A. 房间与入组      创建房间 / 二维码 / 实时成员列表 / 自我介绍采集
+├── B. AI 生成管线     姓名单字拆解 → 视觉提示词 → 文生图 → 合规过滤
+├── C. 游戏主循环      出题 → 抢答 → 字卡翻转揭晓 → 两真一假彩蛋 → 本人开讲
+└── D. 结算与传播      谐音全家福海报 / 保存 / 分享 / 再开一局</pre>
+
+  <h3>3.2 核心流程详解</h3>
+
+  <h4>A. 房间与入组</h4>
+  <ol>
+    <li>房主打开网页链接，一键创建房间，生成二维码 + 4 位房间码</li>
+    <li>成员扫码进入极简页：<strong>输入名字 → 从系统候选中选 3 句自我介绍（勾选 2 真 1 假）</strong></li>
+    <li>成员列表实时同步到房主屏幕，全员就绪后解锁「开始生成」</li>
+    <li><strong>无需注册、无需登录、无需下载</strong></li>
+  </ol>
+  <blockquote>设计要点：自我介绍由<strong>系统提供候选池</strong>而非用户手写——现场没人能在 30 秒内写出好素材，给选项才能保证完成率与趣味性下限。</blockquote>
+
+  <h4>B. AI 生成管线（两段式，关键架构）</h4>
+  <pre>姓名
+ └─ ① LLM 创意拆名
+      · 逐字拆解：字形拆解（张→弓+长） / 谐音（宇→鱼） / 会意（辰→沉）
+      · 输出结构化：{元素, 对应字, 解释文案, 视觉提示词}
+ └─ ② 合规过滤
+      · 负面谐音黑名单（朱→猪 类）
+      · 名字主人可一票否决 / 重 roll
+ └─ ③ 文生图 API
+      · 统一"贴纸/扁平插画风"，规避写实风恐怖谷
+      · 每字一张独立图标 → 网格拼合（而非一张图硬塞 4 个元素）
+ └─ ④ 自我介绍图标化
+      · 3 句介绍同步生成对应图标，进入彩蛋卡池</pre>
+  <blockquote><strong>架构要点</strong>：真正需要"脑洞"的是<strong>拆名</strong>环节，必须交给 LLM 而非文生图模型。直接把名字丢给画图模型效果不可用。这条管线本身是提案的技术叙事重点。</blockquote>
+
+  <h4>C. 游戏主循环</h4>
+  <ol>
+    <li><strong>出题</strong>：图片打乱顺序，投屏或房主手机展示"这 4 张图拼成了一个名字"</li>
+    <li><strong>抢答</strong>：<strong>口头抢答</strong>，不做任何点击投票（防低头设计的核心约束）</li>
+    <li><strong>揭晓</strong>：字卡逐个翻转成汉字 + 谐音拆解动画 —— <strong>记忆形成于揭晓那一刻</strong></li>
+    <li><strong>彩蛋 · 两真一假</strong>：三张标签卡滑出（三句自我介绍的图标化版），大家猜哪句是编的；点卡翻牌，真变绿 / 假标红</li>
+    <li><strong>本人开讲</strong>：揭晓后提示"轮到 XX 本人挑一句真的展开说说（30 秒），大家随便追问"</li>
+    <li>循环至全部成员，进入结算</li>
+  </ol>
+
+  <h4>D. 结算与传播</h4>
+  <ul>
+    <li>生成「谐音全家福」海报：每人一行 = 名字 + 拆解图标 + <strong>2 条真实情报 chip</strong></li>
+    <li>扫码保存 / 分享 —— 天然的合影替代品与传播素材</li>
+    <li>一局 4 人 = 挖出 8 条真实情报，海报即一份带脸的技能花名册</li>
+  </ul>
+
+  <h3>3.3 防低头设计（贯穿性约束）</h3>
+  <blockquote>这是本产品的生死线：<strong>手机是门票，不是座位。</strong></blockquote>
+  <table class="data">
+    <tr><th style="width:140px">约束</th><th>说明</th></tr>
+    <tr><td>手机角色</td><td>仅用于入组与保存海报，合计 ≤1.5 分钟</td></tr>
+    <tr><td>进行时屏幕</td><td><strong>一块屏原则</strong>：投屏优先，无投屏则房主手机平放桌中或笔记本开链接</td></tr>
+    <tr><td>操作主体</td><td>竞猜全部口头完成，<strong>只有房主代点</strong></td></tr>
+    <tr><td>输出物</td><td>游戏的输出是<strong>对话</strong>，不是屏幕时间</td></tr>
+    <tr><td>计分方式</td><td>只记"场面分"（如"隔壁组围观 +2"），<strong>不做个人排行榜</strong></td></tr>
+  </table>
+  <p><strong>反模式警告</strong>：把投票/答题/计分做成人人一屏在工程上最省事（无需同步房主状态），但体验上会直接退化成"大家坐一起玩手机"。宁可保持讨论靠嘴、操作由房主代点。</p>
+
+  <hr>
+
+  <h2><span class="no">4</span>产品形态</h2>
+
+  <h3>4.1 形态选择：H5 网页链接</h3>
+  <table class="data">
+    <tr><th style="width:110px">维度</th><th style="width:44%">网页链接 H5　✅</th><th>小程序　❌</th></tr>
+    <tr><td>触达</td><td>链接 / 二维码即点即玩</td><td>需搜索或扫特定码</td></tr>
+    <tr><td>迭代</td><td>比赛期间随时热更</td><td>每次更新需过审</td></tr>
+    <tr><td>跨平台</td><td>微信内置页 / 浏览器 / 电脑均可开</td><td>基本绑定微信</td></tr>
+    <tr><td>用户成本</td><td>零下载 · 零注册 · 零存储</td><td>加载包体、授权弹窗</td></tr>
+  </table>
+  <p><strong>结论</strong>：对一个"临时拉起来的局"，一个 URL 就是全部传播路径——发群里、投屏上贴二维码即可。</p>
+
+  <h3>4.2 三种现场投放模式</h3>
+  <table class="data">
+    <tr><th style="width:170px">模式</th><th style="width:160px">条件</th><th>做法</th></tr>
+    <tr><td>投屏模式（最佳）</td><td>有投影 / 大屏</td><td>房主屏幕投屏，全员抬头看</td></tr>
+    <tr><td>桌面模式（兜底）</td><td>无投屏</td><td>房主手机平放桌子中央</td></tr>
+    <tr><td>传阅模式（极端）</td><td>无网络 / 无设备</td><td>收集名字后手工出题，仍可跑通核心玩法</td></tr>
+  </table>
+
+  <hr>
+
+  <h2><span class="no">5</span>量化指标</h2>
+
+  <h3>5.1 北极星指标</h3>
+  <p><strong>记名率</strong>：活动结束 10 分钟后，参与者平均能正确叫出的组员名字数 / 总人数。</p>
+  <blockquote>之所以测"10 分钟后"而非"当场"，是因为当场记得不算数——<strong>延迟回想起的正确率才能证明形成了真实记忆锚点</strong>。</blockquote>
+
+  <h3>5.2 指标矩阵</h3>
+  <table class="data">
+    <tr><th style="width:80px">层级</th><th style="width:140px">指标</th><th style="width:190px">目标值</th><th>测量方式</th></tr>
+    <tr><td>北极星</td><td>延迟记名率</td><td>显著高于传统自我介绍组</td><td>结算前嵌入"点头像选名字"小测验</td></tr>
+    <tr><td>认知</td><td>情报留存数</td><td>≥ 2 条真实信息 / 人</td><td>海报 chip 数 / 彩蛋揭晓数</td></tr>
+    <tr><td>体验</td><td>参与度</td><td>主动开口人数 ≥ 组规模 60%</td><td>抢答发言计数</td></tr>
+    <tr><td>体验</td><td>低头率</td><td>个人屏幕时间占比 &lt; 15%</td><td>单机时长埋点</td></tr>
+    <tr><td>体验</td><td>舒适度</td><td>"敢直接叫组员名字"自评 ≥ 4/5</td><td>结算后一句话评分</td></tr>
+    <tr><td>业务</td><td>完成率</td><td>一局完整走完 ≥ 90%</td><td>开始 / 结束埋点</td></tr>
+    <tr><td>业务</td><td>传播</td><td>海报保存 / 分享率 ≥ 40%</td><td>保存按钮埋点</td></tr>
+  </table>
+
+  <h3>5.3 验证计划</h3>
+  <p><strong>关键设计：把测验环节内置于结算页</strong>——在全家福海报之前加一步"来，测测你能叫出几个人的名字"（点头像选名字）。好处有三：</p>
+  <ol>
+    <li>每一次真实开局都<strong>自动积累数据</strong>，零额外验证成本</li>
+    <li>测验本身<strong>强化一遍记忆</strong>（等于免费多复习一轮）</li>
+    <li>提案中可写"产品内置效果追踪，每次对局自动生成验证数据"</li>
+  </ol>
+  <p><strong>比赛前置验证</strong>：答辩前找 8 人分两组（实验组玩产品 / 对照组轮流自我介绍），纸笔测试 10 分钟后记名率，拿到第一个数字。</p>
+  <blockquote>诚实声明：4–6 人小组样本量做不出统计显著性，报告中须注明"小样本"，不得夸大。评委不苛求 P 值，苛求的是度量的意识。</blockquote>
+
+  <hr>
+
+  <h2><span class="no">6</span>MVP 范围</h2>
+
+  <h3>6.1 P0（MVP 必须，黑客松 Demo 前完成）</h3>
+  <table class="data">
+    <tr><th style="width:160px">功能</th><th>说明</th><th style="width:170px">验收标准</th></tr>
+    <tr><td>房间创建 + 二维码</td><td>单链接生成房间</td><td>扫码可进入</td></tr>
+    <tr><td>名字采集</td><td>极简输入页，无需注册</td><td>3 秒内完成输入</td></tr>
+    <tr><td><strong>两段式生成管线</strong></td><td>LLM 拆名 + 文生图</td><td>任意名字 <strong>60 秒内出图</strong></td></tr>
+    <tr><td>字卡翻转揭晓</td><td>汉字 + 谐音解释动画</td><td>动画流畅，解释准确</td></tr>
+    <tr><td>口头竞猜流程</td><td>房主单机控制出题 / 揭晓</td><td>无需组员点击</td></tr>
+    <tr><td>冒犯性防护</td><td>负面谐音黑名单 + 名字主人重 roll</td><td>可一键重生成</td></tr>
+    <tr><td>谐音全家福海报</td><td>名字 + 图标 + 情报 chip</td><td>可保存图片</td></tr>
+  </table>
+
+  <h3>6.2 P1（比赛后迭代）</h3>
+  <ul>
+    <li>自我介绍候选池（结构化采集，替代手写）</li>
+    <li>两真一假彩蛋环节（原型已设计，可先简化为口头）</li>
+    <li>结算页内置记名率测验</li>
+    <li>生僻字 fallback：字源拆解 → 含义联想 → 跳过</li>
+    <li>生成期填充环节（自我介绍 / 闲聊引导）</li>
+  </ul>
+
+  <h3>6.3 P2（长期）</h3>
+  <ul>
+    <li>多语言 / 英文名支持（<strong>当前明确不做</strong>，机制基于汉字，硬扛会稀释体验）</li>
+    <li>队伍技能标签聚合与分工建议</li>
+    <li>跨场次数据沉淀、团队记忆库</li>
+  </ul>
+
+  <h3>6.4 明确不做</h3>
+  <ul>
+    <li>❌ 账号体系 / 用户注册</li>
+    <li>❌ 个人排行榜 / 竞技排名（反防低头设计）</li>
+    <li>❌ 小程序版本（成本收益不成立）</li>
+    <li>❌ 国际化名字支持</li>
+  </ul>
+
+  <hr>
+
+  <h2><span class="no">7</span>风险应对</h2>
+
+  <h3>7.1 风险清单</h3>
+  <table class="data">
+    <tr><th style="width:36px">#</th><th style="width:200px">风险</th><th style="width:60px">等级</th><th>应对措施</th></tr>
+    <tr><td>R1</td><td><strong>社交风险：谐音冒犯</strong></td><td>🔴 高</td><td>负面谐音黑名单；<strong>名字主人一票否决 / 重 roll</strong>；生成后仅本人可见一次确认机会</td></tr>
+    <tr><td>R2</td><td><strong>体验退化：变成一起玩手机</strong></td><td>🔴 高</td><td>一块屏原则；口头抢答；只有房主可操作；不做个人排行榜（见 3.3）</td></tr>
+    <tr><td>R3</td><td><strong>生成质量：恐怖谷</strong></td><td>🟠 中</td><td>统一贴纸 / 扁平插画风；每字独立图标而非一张图塞多元素；单张可重 roll</td></tr>
+    <tr><td>R4</td><td><strong>技术：生僻字 / 多音字拆不动</strong></td><td>🟠 中</td><td>三级 fallback：字源拆解 → 含义联想 → 标注"此字留给大家自由发挥"；赛前用生僻字压力测试</td></tr>
+    <tr><td>R5</td><td><strong>延迟：6 人 × 20 秒很尴尬</strong></td><td>🟠 中</td><td>批量并发生成；生成期设计填充话术（"趁现在聊聊待会儿的两真一假，但别剧透"）</td></tr>
+    <tr><td>R6</td><td><strong>现场设备不可靠</strong></td><td>🟠 中</td><td>三种投放模式（投屏 / 桌面 / 传阅）；核心玩法手工可兜底</td></tr>
+    <tr><td>R7</td><td><strong>API 成本与 Key 安全</strong></td><td>🟡 低</td><td>Key 仅存本地，绝不上传服务端；限制单房间生成次数</td></tr>
+    <tr><td>R8</td><td><strong>隐私：真名采集</strong></td><td>🟡 低</td><td>界面明示用途；对局结束即释放；不做持久化存储</td></tr>
+    <tr><td>R9</td><td><strong>多音字歧义</strong>（如"重""行"）</td><td>🟡 低</td><td>LLM 拆名时生成多版本候选，房主 / 本人在入组时选定</td></tr>
+  </table>
+
+  <h3>7.2 Top 2 风险的深度应对</h3>
+  <p><strong>R1 谐音冒犯（最需警惕）</strong></p>
+  <p>谐音梗是双刃剑。"朱→猪"这类映射对名字主人可能造成真实伤害，且在黑客松现场被公开玩梗的尴尬会直接反噬产品的"氛围"定位。因此：</p>
+  <ul>
+    <li>生成前：LLM 侧过滤负面联想词表</li>
+    <li>生成后：<strong>名字主人拥有唯一裁决权</strong>——预览到自己名字的图，可一键重 roll，无需向他人解释</li>
+    <li>兜底：若三次重 roll 仍不满意，允许跳过该成员进入下一环节</li>
+  </ul>
+  <p><strong>R2 体验退化（最易发生）</strong></p>
+  <p>见 3.3 防低头设计。核心是<strong>在架构上不给"各自盯屏"留接口</strong>——只要不实现组员端的投票 / 答题 / 计分，退化就不会发生。这条要在开发排期时就作为硬约束写入，而不是上线后靠运营补救。</p>
+
+  <hr>
+
+  <h2><span class="no">8</span>比赛答辩要点（附加）</h2>
+
+  <table class="data">
+    <tr><th style="width:120px">评分维度</th><th>对应素材</th></tr>
+    <tr><td>创新性</td><td>AI 自动化"名字 → 视觉锚点"的联想；两段式生成架构</td></tr>
+    <tr><td>完成度</td><td>全流程可跑通的原型（含彩蛋、海报、防低头机制）</td></tr>
+    <tr><td>技术实现</td><td>LLM 拆名 + 文生图管线图；合规过滤层</td></tr>
+    <tr><td>现场效果</td><td><strong>Demo 环节收集 2–3 位评委的名字实时生成、全场竞猜</strong></td></tr>
+    <tr><td>实际价值</td><td>上线后即为带脸的技能花名册，直接服务后续分工</td></tr>
+  </table>
+  <blockquote><strong>Demo 杀招</strong>：氛围产品的最好证明就是氛围本身。让评委的名字被拆成"弓+鱼+金秤砣"，全场哄笑的那 60 秒，比任何 PPT 页面都值钱。</blockquote>
+
+  <div class="note">
+    <div class="t">备注</div>
+    <div class="n">制作人：张佳宇辰、李嘉欣</div>
+  </div>
+
+  <div class="foot">名场面 · 产品需求文档 v1.0</div>
+</div>
+</body>
+</html>

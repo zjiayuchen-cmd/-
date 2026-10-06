@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>名场面 · 把每个人的名字变成一场猜谜</title>
+<style>
+:root {
+  --bg: #17141f;
+  --paper: #fff8f2;
+  --primary: #ff6b5e;
+  --primary-deep: #e8503f;
+  --accent: #2ec4a6;
+  --gold: #ffb648;
+  --ink: #2b2622;
+  --muted: #9a8f86;
+  --line: #f0e4da;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--paper); color: var(--ink);
+  min-height: 100vh; overflow-x: hidden;
+}
+.wrap { max-width: 520px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+.body { flex: 1; padding: 20px 22px 24px; overflow-y: auto; }
+.bar { flex-shrink: 0; padding: 12px 22px calc(16px + env(safe-area-inset-bottom)); background: linear-gradient(to top, var(--paper) 70%, rgba(255,248,242,0)); }
+
+.btn {
+  width: 100%; border: none; border-radius: 18px; padding: 16px;
+  font-size: 16px; font-weight: 800; letter-spacing: 1px; cursor: pointer;
+  background: var(--primary); color: #fff; font-family: inherit;
+  box-shadow: 0 10px 24px rgba(232,80,63,.3);
+  transition: transform .15s ease;
+}
+.btn:active { transform: scale(.97); }
+.btn.ghost { background: #fff; color: var(--ink); border: 2px solid var(--line); box-shadow: none; }
+.btn.accent { background: var(--accent); box-shadow: 0 10px 24px rgba(46,196,166,.3); }
+.btn:disabled { background: #e8ded4; color: #b6a99c; box-shadow: none; cursor: not-allowed; }
+.btn + .btn { margin-top: 10px; }
+.btn.breathe { animation: breathe 1.6s ease infinite; }
+@keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+
+input[type=text] {
+  width: 100%; border: 2px solid var(--line); border-radius: 16px;
+  padding: 15px 16px; font-size: 16px; font-family: inherit;
+  background: #fff; color: var(--ink); outline: none;
+}
+input[type=text]:focus { border-color: var(--primary); }
+input.code { letter-spacing: 8px; text-align: center; font-size: 22px; font-weight: 800; }
+
+.card { background: #fff; border: 2px solid var(--line); border-radius: 20px; padding: 18px; }
+.muted { color: var(--muted); font-size: 13px; line-height: 1.6; }
+.center { text-align: center; }
+h1.logo {
+  font-size: 40px; font-weight: 900; letter-spacing: 3px; text-align: center;
+  background: linear-gradient(120deg, var(--primary), var(--gold));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.emoji-big { font-size: 56px; text-align: center; display: block; margin: 18px 0; animation: floaty 3s ease-in-out infinite; }
+@keyframes floaty { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-9px) rotate(3deg); } }
+
+.toast {
+  position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%) translateY(16px);
+  background: rgba(43,38,34,.94); color: #fff; font-size: 13.5px; z-index: 999;
+  padding: 12px 22px; border-radius: 30px; opacity: 0; pointer-events: none;
+  transition: all .3s ease; max-width: 88%; text-align: center;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.member { display: flex; align-items: center; gap: 11px; padding: 11px 14px; background: #fff; border: 2px solid var(--line); border-radius: 16px; margin-bottom: 8px; animation: in .4s cubic-bezier(.2,1.4,.4,1) both; }
+@keyframes in { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+.member .av { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; background: #f6efe8; }
+.member .nm { flex: 1; font-size: 15px; font-weight: 800; }
+.member .st { font-size: 11.5px; font-weight: 800; padding: 4px 11px; border-radius: 20px; background: #f4ede6; color: var(--muted); }
+.member .st.ok { background: rgba(46,196,166,.14); color: var(--accent); }
+
+
+/* ============ 单文件版：多页面容器 ============ */
+.gx-page { display: none; }
+.gx-page.on { display: block; }
+.gx-bar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 900;
+  display: flex; gap: 6px; background: rgba(43,38,34,.9); padding: 6px; border-radius: 999px;
+  box-shadow: 0 10px 26px rgba(0,0,0,.3); backdrop-filter: blur(6px); }
+.gx-bar button { border: 0; background: transparent; color: #cfc6db; font-family: inherit;
+  font-size: 12.5px; font-weight: 800; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
+.gx-bar button.on { background: var(--primary); color: #fff; }
+.gx-bar button:hover { color: #fff; }
+
+/* ============ 首页 ============ */
+body { background: radial-gradient(1000px 700px at 50% 0%, #2c2540 0%, var(--bg) 60%) fixed; }
+  .wrap { max-width: 560px; justify-content: center; }
+  .body { padding: 40px 26px; text-align: center; }
+  .slogan { color: #b7adc4; font-size: 14.5px; margin-top: 12px; line-height: 1.7; }
+  .entries { margin-top: 40px; }
+  .entry {
+    display: block; text-decoration: none; background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.12); border-radius: 20px;
+    padding: 20px 22px; margin-bottom: 14px; text-align: left;
+    transition: all .22s ease;
+  }
+  .entry:active { transform: scale(.98); }
+  .entry .t { color: #fff; font-size: 17px; font-weight: 900; display: flex; align-items: center; gap: 10px; }
+  .entry .d { color: #a99fba; font-size: 12.5px; margin-top: 8px; line-height: 1.6; }
+  .entry.primary { background: linear-gradient(120deg, rgba(255,107,94,.22), rgba(255,182,72,.14)); border-color: rgba(255,107,94,.4); }
+  .feats { margin-top: 34px; text-align: left; }
+  .feat { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 11px; }
+  .feat .i { font-size: 18px; flex-shrink: 0; }
+  .feat .x { color: #a99fba; font-size: 13px; line-height: 1.65; }
+  .feat .x b { color: #e0d8ea; }
+  .foot { color: #6e6580; font-size: 11.5px; margin-top: 30px; letter-spacing: 1px; }
+
+/* ============ 主持屏 ============ */
+body { background: radial-gradient(1200px 800px at 20% 0%, #2c2540 0%, var(--bg) 55%) fixed; }
+  .wrap { max-width: 900px; }
+  .body { padding: 22px 28px 28px; }
+
+  .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .top .lg { font-size: 24px; font-weight: 900; letter-spacing: 2px;
+    background: linear-gradient(120deg, var(--primary), var(--gold));
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .top .code { color: #fff; font-size: 15px; }
+  .top .code b { font-size: 24px; letter-spacing: 4px; color: var(--gold); margin-left: 6px; }
+  .top .ph { font-size: 12.5px; color: #a99fba; }
+
+  .panel { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 22px; padding: 20px; }
+  .panel + .panel { margin-top: 14px; }
+  .panel h2 { color: #fff; font-size: 15px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .panel h2 .n { width: 22px; height: 22px; border-radius: 50%; background: var(--primary); color: #fff; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+
+  /* 二维码 */
+  .qrbox { display: flex; gap: 22px; align-items: center; }
+  .qrframe { background: #fff; padding: 12px; border-radius: 18px; flex-shrink: 0; }
+  .qrframe img { display: block; width: 190px; height: 190px; }
+  .qrtext { color: #cfc6db; font-size: 13px; line-height: 1.9; }
+  .qrtext b { color: #fff; }
+  .qrtext .url { display: inline-block; margin-top: 8px; background: rgba(255,255,255,.1); padding: 6px 12px; border-radius: 10px; font-size: 12px; color: var(--gold); word-break: break-all; }
+
+  /* 成员 */
+  .mlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .mcard { display: flex; align-items: center; gap: 11px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); border-radius: 14px; padding: 11px 14px; animation: in .4s cubic-bezier(.2,1.4,.4,1) both; }
+  .mcard .av { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .mcard .nm { color: #fff; font-size: 14.5px; font-weight: 800; flex: 1; }
+  .mcard .tag { font-size: 10.5px; font-weight: 800; padding: 3px 9px; border-radius: 20px; background: rgba(255,255,255,.12); color: #b7adc4; }
+  .mcard .tag.ok { background: rgba(46,196,166,.2); color: var(--accent); }
+  .empty { color: #8d84a0; font-size: 13px; padding: 8px 0; }
+
+  /* 生成中 */
+  .pipeline { display: flex; flex-direction: column; gap: 8px; }
+  .pstep { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); border-radius: 14px; padding: 11px 14px; display: flex; align-items: center; gap: 10px; color: #e0d8ea; font-size: 13.5px; opacity: 0; transform: translateY(8px); transition: all .4s ease; }
+  .pstep.on { opacity: 1; transform: none; }
+  .pstep .sp { width: 15px; height: 15px; border-radius: 50%; border: 2.5px solid rgba(255,255,255,.2); border-top-color: var(--primary); animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .pstep .ck { color: var(--accent); font-weight: 900; }
+  .pstep .lb { font-weight: 800; color: #fff; }
+  .pstep .els { color: var(--gold); font-size: 12.5px; margin-left: auto; }
+
+  /* 出题 */
+  .qhead { text-align: center; margin-bottom: 16px; }
+  .qhead .dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
+  .qhead .dot { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.2); transition: all .3s; }
+  .qhead .dot.now { background: var(--primary); transform: scale(1.4); }
+  .qhead .dot.past { background: var(--gold); }
+  .qhead .lbl { color: #a99fba; font-size: 14px; letter-spacing: 2px; }
+  .qhead .big { color: #fff; font-size: 22px; font-weight: 900; margin-top: 8px; }
+  .qhead .big span { color: var(--primary); }
+  .qhead .hintline { color: var(--gold); font-size: 14px; margin-top: 10px; }
+
+  .cards { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin: 22px 0; }
+  .qcard { width: 150px; height: 170px; perspective: 900px; }
+  .qcard .inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .65s cubic-bezier(.4,.1,.2,1); }
+  .qcard.flip .inner { transform: rotateY(180deg); }
+  .qcard .f { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+  .qcard .front { background: #fffdfb; border: 3px solid rgba(255,255,255,.9); box-shadow: 0 14px 30px rgba(0,0,0,.35); }
+  .qcard .front .lb { font-size: 12px; font-weight: 800; color: var(--muted); letter-spacing: 1px; }
+  .qcard .back { background: linear-gradient(140deg, var(--primary), #ff8f5e); transform: rotateY(180deg); box-shadow: 0 14px 30px rgba(232,80,63,.4); }
+  .qcard .back .c { color: #fff; font-size: 44px; font-weight: 900; }
+  .qcard .back .n { color: rgba(255,255,255,.9); font-size: 11.5px; font-weight: 700; padding: 0 8px; text-align: center; line-height: 1.4; }
+
+  .answer { text-align: center; opacity: 0; transform: scale(.9); transition: all .45s cubic-bezier(.2,1.4,.4,1); }
+  .answer.show { opacity: 1; transform: scale(1); }
+  .answer .who { color: var(--gold); font-size: 30px; font-weight: 900; letter-spacing: 3px; }
+  .answer .why { color: #d8cfc6; font-size: 14.5px; margin-top: 10px; line-height: 1.8; max-width: 620px; margin-left: auto; margin-right: auto; }
+  .answer .warn { display: inline-block; margin-top: 12px; font-size: 12px; color: #ffb648; background: rgba(255,182,72,.12); padding: 5px 14px; border-radius: 20px; }
+
+  /* 彩蛋 */
+  .egg { margin-top: 22px; opacity: 0; transform: translateY(10px); transition: all .45s cubic-bezier(.2,1.4,.4,1); }
+  .egg.show { opacity: 1; transform: none; }
+  .egg .ttl { text-align: center; color: #fff; font-size: 17px; font-weight: 900; }
+  .egg .sub { text-align: center; color: #a99fba; font-size: 12.5px; margin-top: 6px; }
+  .eggcards { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+  .eggc { background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.14); border-radius: 16px; padding: 14px 20px; text-align: center; min-width: 150px; transition: all .3s ease; }
+  .eggc .e { font-size: 30px; }
+  .eggc .t { color: #fff; font-size: 13.5px; font-weight: 800; margin-top: 8px; }
+  .eggc .m { font-size: 11.5px; font-weight: 800; margin-top: 8px; color: #a99fba; }
+  .eggc.truth { border-color: var(--accent); background: rgba(46,196,166,.14); }
+  .eggc.truth .m { color: var(--accent); }
+  .eggc.lie { border-color: var(--primary); background: rgba(255,107,94,.14); }
+  .eggc.lie .m { color: var(--primary); }
+
+  .mic { margin-top: 16px; background: rgba(255,182,72,.1); border: 1px solid rgba(255,182,72,.3); border-radius: 16px; padding: 14px 18px; text-align: center; color: #f3ead9; font-size: 14px; line-height: 1.7; opacity: 0; transition: opacity .4s; }
+  .mic.show { opacity: 1; }
+  .mic b { color: var(--gold); }
+
+  .hostbar { display: flex; gap: 12px; margin-top: 18px; align-items: center; }
+  .hostbar .btn { flex: 1; }
+  .hostbar .hint { color: #8d84a0; font-size: 12px; flex-shrink: 0; }
+
+  @media (max-width: 700px) {
+    .qrbox { flex-direction: column; align-items: flex-start; }
+    .qcard { width: 118px; height: 138px; }
+    .qcard .back .c { font-size: 34px; }
+  }
+
+/* ============ 手机加入 ============ */
+.pool { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 14px; }
+  .pitem {
+    display: flex; align-items: center; gap: 8px; background: #fff;
+    border: 2px solid var(--line); border-radius: 14px; padding: 11px 10px;
+    cursor: pointer; transition: all .2s ease; font-size: 13px; font-weight: 700;
+    position: relative;
+  }
+  .pitem .pe { font-size: 20px; }
+  .pitem:active { transform: scale(.97); }
+  .pitem.sel { border-color: var(--primary); background: rgba(255,107,94,.07); }
+  .pitem.lie { border-color: var(--primary-deep); background: rgba(255,107,94,.14); }
+  .pitem .mark { position: absolute; top: -8px; right: -6px; font-size: 10px; font-weight: 900; background: var(--primary); color: #fff; border-radius: 10px; padding: 2px 7px; display: none; }
+  .pitem.lie .mark { display: block; }
+  .hint { font-size: 12.5px; color: var(--muted); line-height: 1.6; margin-top: 10px; }
+  .counter { text-align: center; font-size: 13px; font-weight: 800; margin-top: 14px; }
+  .counter b { color: var(--primary); font-size: 18px; }
+  .gate { text-align:center; padding-top: 26px; }
+  .phase-box { text-align: center; padding: 30px 10px; }
+  .phase-box .e { font-size: 60px; display: block; margin-bottom: 14px; animation: floaty 2.4s ease-in-out infinite; }
+  .phase-box .t { font-size: 19px; font-weight: 900; }
+  .phase-box .s { font-size: 13px; color: var(--muted); margin-top: 8px; line-height: 1.7; }
+
+/* ============ 演示模式补充 ============ */
+#viewGen .pipeline .done-all { margin-top: 2px; }
+.eggc { cursor: pointer; }
+.eggc.pick { transform: translateY(-4px); }
+.gx-demo-tip { text-align: center; color: #8d84a0; font-size: 12px; margin-top: 14px; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<!-- ==================== 首页 ==================== -->
+<div class="gx-page on" id="pgHome">
+<div class="wrap">
+  <div class="body">
+    <h1 class="logo">名场面</h1>
+    <p class="slogan">
+      把每个人的名字，变成一场猜谜<br>
+      黑客松开场 5 分钟，记住名字也认识队友
+    </p>
+
+    <div style="font-size:62px;margin-top:26px;animation:floaty 3s ease-in-out infinite">🎭</div>
+
+    <div class="entries">
+      <a class="entry primary" href="javascript:;" onclick="gxGo('host')">
+        <div class="t">🖥️ 我是房主 <span style="font-size:11px;background:rgba(255,255,255,.2);padding:3px 9px;border-radius:20px">用电脑/大屏打开</span></div>
+        <div class="d">创建房间 → 投屏二维码 → 生成 → 带全场猜</div>
+      </a>
+      <a class="entry" href="javascript:;" onclick="gxGo('join')">
+        <div class="t">📱 我要加入 <span style="font-size:11px;background:rgba(255,255,255,.2);padding:3px 9px;border-radius:20px">用手机打开</span></div>
+        <div class="d">输房间码 → 输名字 → 选 3 句自我介绍（2 真 1 假）</div>
+      </a>
+    </div>
+
+    <div class="feats">
+      <div class="feat"><span class="i">🎯</span><span class="x"><b>记住名字</b> —— 谐音+会意拆字，AI 把名字画成图，猜过就忘不掉</span></div>
+      <div class="feat"><span class="i">🎒</span><span class="x"><b>认识队友</b> —— 两真一假自我介绍彩蛋，一局挖出 2 条真实情报/人</span></div>
+      <div class="feat"><span class="i">🗣️</span><span class="x"><b>抬头玩</b> —— 手机只用来入组，游戏全程一块屏、用嘴抢答</span></div>
+      <div class="feat"><span class="i">📵</span><span class="x"><b>零下载零注册</b> —— 扫码即玩，结束即走</span></div>
+    </div>
+
+    <div class="foot">HACKATHON ICEBREAKER · 名场面</div>
+  </div>
+</div>
+</div>
+
+<!-- ==================== 主持屏 ==================== -->
+<div class="gx-page" id="pgHost">
+<div class="wrap">
+  <div class="body">
+    <div class="top">
+      <div class="lg">名场面</div>
+      <div class="code">房间码<b id="codeTxt">----</b></div>
+      <div class="ph" id="phaseTxt">准备中</div>
+    </div>
+
+    <!-- 大厅 -->
+    <div id="viewLobby">
+      <div class="panel">
+        <h2><span class="n">1</span>让大家扫码加入</h2>
+        <div class="qrbox">
+          <div class="qrframe"><canvas id="qrCv" width="380" height="380" style="width:190px;height:190px;display:block"></canvas></div>
+          <div class="qrtext">
+            手机扫码 → 输入名字 → 选 3 句自我介绍（<b>2 真 1 假</b>）<br>
+            <b>不用下载任何 App</b>，微信/浏览器直接打开<br>
+            也可以手动输房间码加入
+            <div class="url" id="joinUrl"></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2><span class="n">2</span>已加入的组员 <span class="hint" style="color:#8d84a0;font-size:12px;font-weight:400" id="cntTxt"></span></h2>
+        <div class="mlist" id="mlist"><div class="empty">等待组员扫码加入…</div></div>
+      </div>
+    </div>
+
+    <!-- 生成中 -->
+    <div id="viewGen" style="display:none">
+      <div class="panel">
+        <h2><span class="n">🪄</span>AI 正在拆名字…</h2>
+        <div class="pipeline" id="pipeline"></div>
+      </div>
+    </div>
+
+    <!-- 出题 -->
+    <div id="viewPlay" style="display:none">
+      <div class="panel">
+        <div class="qhead">
+          <div class="dots" id="dots"></div>
+          <div class="lbl">谁的名字藏在图里？</div>
+          <div class="big">这 <span id="cardCount">4</span> 张图拼成了一个名字</div>
+          <div class="hintline">🗣️ 让大家用嘴抢答，不要点屏幕</div>
+        </div>
+        <div class="cards" id="cards"></div>
+        <div class="answer" id="answer">
+          <div class="who" id="aWho"></div>
+          <div class="why" id="aWhy"></div>
+          <div class="warn" id="aWarn" style="display:none"></div>
+        </div>
+
+        <div class="egg" id="egg">
+          <div class="ttl">🎒 彩蛋 · 关于TA，有一句是编的</div>
+          <div class="sub">入组时 TA 选了 3 句自我介绍 — 2 真 1 假，猜猜哪句是假的！</div>
+          <div class="eggcards" id="eggCards"></div>
+          <div class="mic" id="mic"></div>
+        </div>
+      </div>
+      <div class="hostbar">
+        <button class="btn accent" id="btnReveal" onclick="doReveal()">揭晓答案 ✨</button>
+        <button class="btn" id="btnEgg" style="display:none" onclick="doEgg()">彩蛋 · 两真一假 🎒</button>
+        <button class="btn" id="btnNext" style="display:none" onclick="nextQ()">下一题 →</button>
+        <div class="hint" id="roomHint"></div>
+      </div>
+    </div>
+
+    <!-- 结算 -->
+    <div id="viewResult" style="display:none">
+      <div class="panel">
+        <h2><span class="n">🎉</span>全部猜完！</h2>
+        <div id="resultBody"></div>
+      </div>
+      <div class="hostbar">
+        <button class="btn ghost" onclick="gxReset()">再来一局</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ==================== 手机加入 ==================== -->
+<div class="gx-page" id="pgJoin">
+<div class="wrap">
+  <div class="body">
+
+    <!-- 步骤1：输名字 -->
+    <div id="s1" class="gate">
+      <h1 class="logo">名场面</h1>
+      <p class="muted center" style="margin-top:8px">输入你的名字，加入这场猜谜</p>
+      <span class="emoji-big">🎭</span>
+      <input type="text" id="nameInput" placeholder="你的名字（真名最好，大家要记的就是它）" maxlength="8">
+      <p class="hint center" id="errBox" style="color:var(--primary);min-height:18px"></p>
+    </div>
+
+    <!-- 步骤2：选自我介绍 -->
+    <div id="s2" style="display:none">
+      <div class="center">
+        <div style="font-size:30px">🎒</div>
+        <div style="font-size:18px;font-weight:900;margin-top:8px">让大家认识你</div>
+        <p class="muted" style="margin-top:6px">勾选 <b>2 条真实的</b> + <b>1 条编的</b><br>待会儿大家要猜哪条是假的</p>
+      </div>
+      <div class="counter" id="counter">已选 <b>0</b> / 3</div>
+      <div class="pool" id="pool"></div>
+      <p class="hint">💡 最后一个勾选的会默认为「假」——想指定哪条是假的，就最后勾它</p>
+    </div>
+
+    <!-- 等待中 -->
+    <div id="s3" style="display:none">
+      <div class="phase-box">
+        <span class="e">⏳</span>
+        <div class="t">已就绪，等待房主开始</div>
+        <div class="s">你的名字和自我介绍已经提交<br>把手机放桌上，抬头看大屏吧</div>
+      </div>
+      <div class="card" style="margin-top:8px">
+        <div class="muted center" style="margin-bottom:10px">同组都有谁</div>
+        <div id="memberList"></div>
+      </div>
+    </div>
+
+    <!-- 游戏中 -->
+    <div id="s4" style="display:none">
+      <div class="phase-box">
+        <span class="e">👀</span>
+        <div class="t">游戏进行中，抬头看大屏！</div>
+        <div class="s">用嘴抢答，别低头<br>轮到你的时候会通知你</div>
+      </div>
+      <div id="yourTurn" class="card" style="display:none;border-color:var(--primary);background:rgba(255,107,94,.06)">
+        <div style="font-size:16px;font-weight:900">🎤 轮到你开讲</div>
+        <p class="muted" style="margin-top:8px">挑一句真的展开说说（30 秒），大家随便追问。</p>
+        <div id="yourTags" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+    <!-- 结算 -->
+    <div id="s5" style="display:none">
+      <div class="phase-box">
+        <span class="e">🎉</span>
+        <div class="t">全部猜完！</div>
+        <div class="s">现在，试着叫出每个人的名字吧</div>
+      </div>
+      <div class="card" id="resultBox"></div>
+    </div>
+
+  </div>
+  <div class="bar" id="actionBar"></div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ==================== 演示导航：仅此单文件版提供 ==================== -->
+<div class="gx-bar">
+  <button id="navHome" onclick="gxGo('home')">🏠 首页</button>
+  <button id="navHost" onclick="gxGo('host')">🖥️ 主持屏</button>
+  <button id="navJoin" onclick="gxGo('join')">📱 手机加入</button>
+  <button onclick="gxGo('host');gxJumpDemo()">⚡ 一键演示</button>
+</div>
+
+<script>
+/* ==================== 超轻量二维码生成器（QR Model 2，字节模式，EC=L，无依赖） ==================== */
+const QR = (function () {
+  const EXP = new Uint8Array(512), LOG = new Uint8Array(256);
+  (function () { let x = 1; for (let i = 0; i < 255; i++) { EXP[i] = x; LOG[x] = i; x <<= 1; if (x & 0x100) x ^= 0x11d; } for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255]; })();
+  const mul = (a, b) => (a === 0 || b === 0) ? 0 : EXP[LOG[a] + LOG[b]];
+  function genPoly(n) {
+    let p = [1];
+    for (let i = 0; i < n; i++) {
+      const q = new Array(p.length + 1).fill(0);
+      for (let j = 0; j < p.length; j++) { q[j] ^= mul(p[j], 1); q[j + 1] ^= mul(p[j], EXP[i]); }
+      p = q;
+    }
+    return p;
+  }
+  function ecc(data, n) {
+    const g = genPoly(n), out = new Array(n).fill(0);
+    for (const b of data) {
+      const f = b ^ out[0];
+      out.shift(); out.push(0);
+      for (let i = 0; i < n; i++) out[i] ^= mul(g[i + 1], f);
+    }
+    return out;
+  }
+  const PAD0 = 0xEC, PAD1 = 0x11;
+  function build(version, dataCw, ecCw, blocks) {
+    const total = dataCw + ecCw * blocks;
+    const size = version * 4 + 17;
+    const m = Array.from({ length: size }, () => new Array(size).fill(null));  // null=空 true=黑
+    const fn = Array.from({ length: size }, () => new Array(size).fill(false)); // 功能模块
+    const setF = (x, y, v) => { if (x < 0 || y < 0 || x >= size || y >= size) return; m[y][x] = v; fn[y][x] = true; };
+    // 定位图案
+    for (const [ox, oy] of [[0, 0], [size - 7, 0], [0, size - 7]]) {
+      for (let y = -1; y <= 7; y++) for (let x = -1; x <= 7; x++) {
+        const inRing = x >= 0 && x <= 6 && y >= 0 && y <= 6;
+        const v = inRing && (x === 0 || x === 6 || y === 0 || y === 6 || (x >= 2 && x <= 4 && y >= 2 && y <= 4));
+        setF(ox + x, oy + y, v);
+      }
+    }
+    // 定时图案
+    for (let i = 8; i < size - 8; i++) { setF(i, 6, i % 2 === 0); setF(6, i, i % 2 === 0); }
+    // 校正图案（版本 4 起）
+    if (version >= 2) {
+      const pos = version === 2 ? [6, 18] : version === 3 ? [6, 22] : version === 4 ? [6, 26] : version === 5 ? [6, 30] : [6, 34];
+      for (const cy of pos) for (const cx of pos) {
+        if ((cx === 6 && cy === 6) || (cx === 6 && cy === pos[pos.length - 1]) || (cx === pos[pos.length - 1] && cy === 6)) continue;
+        for (let y = -2; y <= 2; y++) for (let x = -2; x <= 2; x++) {
+          const v = Math.max(Math.abs(x), Math.abs(y)) !== 1;
+          setF(cx + x, cy + y, v);
+        }
+      }
+    }
+    // 格式信息预留
+    for (let i = 0; i <= 8; i++) { setF(8, i, false); setF(i, 8, false); }
+    for (let i = 0; i < 8; i++) { setF(size - 1 - i, 8, false); setF(8, size - 1 - i, false); }
+    setF(8, size - 8, false);
+    // 版本信息（版本 >= 7）
+    if (version >= 7) {
+      let d = version << 12;
+      for (let i = 17; i >= 12; i--) d ^= mul(d >> i, genPoly(12 - 0)[0] ? 0 : 0); // 占位：版本信息用固定表
+    }
+    // 数据落位（列蛇形，跳过第 6 列）
+    const bits = [];
+    const push = (v, len) => { for (let i = len - 1; i >= 0; i--) bits.push((v >> i) & 1); };
+    return { m, fn, size, bits, push, total };
+  }
+  function finalize(st) {
+    const { m, fn, size, bits } = st;
+    let idx = 0;
+    for (let right = size - 1; right >= 1; right -= 2) {
+      if (right === 6) right = 5;
+      for (let vert = 0; vert < size; vert++) {
+        for (let j = 0; j < 2; j++) {
+          const x = right - j;
+          const upward = ((right + 1) & 2) === 0;
+          const y = upward ? size - 1 - vert : vert;
+          if (fn[y][x]) continue;
+          m[y][x] = idx < bits.length ? bits[idx] === 1 : false;
+          idx++;
+        }
+      }
+    }
+    // 掩码：固定使用 0 号掩码 ((r+c)%2==0)，兼顾解码成功率
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+      if (fn[y][x]) continue;
+      if ((y + x) % 2 === 0) m[y][x] = !m[y][x];
+    }
+    // 格式信息：EC=L(01) + 掩码 0
+    const fmt = 0x77C4; // (1<<13)|(1<<12)|(1<<10)... 实际值由下表给出
+    // 使用标准格式串：L + mask0 = 0b111011111000100
+    const F = '111011111000100'.split('').map(Number);
+    const F1 = [0, 1, 2, 3, 4, 5, 7, 8];
+    for (let i = 0; i < 8; i++) { m[F1[i]][8] = !!F[14 - i]; fn[F1[i]][8] = true; }
+    for (let i = 8; i < 15; i++) { m[8][14 - i] = !!F[14 - i]; fn[8][14 - i] = true; }
+    for (let i = 0; i < 7; i++) { m[size - 1 - i][8] = !!F[14 - i]; fn[size - 1 - i][8] = true; }
+    for (let i = 7; i < 15; i++) { m[8][size - 15 + i] = !!F[14 - i]; fn[8][size - 15 + i] = true; }
+    m[size - 8][8] = true; fn[size - 8][8] = true;
+    return m;
+  }
+  function make(text) {
+    const bytes = Array.from(new TextEncoder().encode(text));
+    const version = bytes.length <= 17 ? 1 : bytes.length <= 32 ? 2 : bytes.length <= 53 ? 3 : bytes.length <= 78 ? 4 : 5;
+    const V = { 1: [19, 7, 1], 2: [34, 10, 1], 3: [55, 15, 1], 4: [80, 20, 1], 5: [108, 26, 1] }[version];
+    const [dataCw, ecCw, blocks] = V;
+    const st = build(version, dataCw, ecCw, blocks);
+    st.push(4, 4); st.push(bytes.length, version === 1 ? 8 : 8);
+    for (const b of bytes) st.push(b, 8);
+    const cap = dataCw * 8;
+    if (st.bits.length > cap) return null;
+    for (let i = 0; i < 4 && st.bits.length < cap; i++) st.bits.push(0);
+    while (st.bits.length % 8 !== 0) st.bits.push(0);
+    const cw = [];
+    for (let i = 0; i < st.bits.length; i += 8) cw.push(parseInt(st.bits.slice(i, i + 8).join(''), 2));
+    let pad = PAD0;
+    while (cw.length < dataCw) { cw.push(pad); pad = pad === PAD0 ? PAD1 : PAD0; }
+    const eccBytes = ecc(cw, ecCw);
+    const all = cw.concat(eccBytes);
+    const bits = [];
+    for (const b of all) for (let i = 7; i >= 0; i--) bits.push((b >> i) & 1);
+    st.bits = bits;
+    st.m = Array.from({ length: st.size }, () => new Array(st.size).fill(null));
+    st.fn = st.fn;
+    // 重新构建空白矩阵用于落位
+    const m2 = Array.from({ length: st.size }, () => new Array(st.size).fill(null));
+    const fn2 = st.fn;
+    const size = st.size, m = m2;
+    // 功能图案重画
+    const setF = (x, y, v) => { if (x < 0 || y < 0 || x >= size || y >= size) return; m[y][x] = v; fn2[y][x] = true; };
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) m[y][x] = null;
+    const fnKeep = Array.from({ length: size }, () => new Array(size).fill(false));
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) fnKeep[y][x] = fn2[y][x];
+    // 直接复用 first pass 的结构：重跑一次
+    const st2 = build(version, dataCw, ecCw, blocks);
+    st2.bits = bits;
+    return finalize(st2);
+  }
+  return { make };
+})();
+
+/* ==================== 单文件版：页面切换 + 演示数据 ==================== */
+const PAGE_BG = { home: 'radial-gradient(1000px 700px at 50% 0%, #2c2540 0%, var(--bg) 60%) fixed',
+                  host: 'radial-gradient(1200px 800px at 20% 0%, #2c2540 0%, var(--bg) 55%) fixed',
+                  join: '' };
+const PAGE_TYPE = { home: 'radial-gradient(1000px 700px at 50% 0%, #2c2540 0%, var(--bg) 60%) fixed',
+                  host: 'radial-gradient(1200px 800px at 20% 0%, #2c2540 0%, var(--bg) 55%) fixed',
+                  join: 'var(--paper)' };
+function gxGo(page) {
+  ['home', 'host', 'join'].forEach(p => document.getElementById('pg' + p[0].toUpperCase() + p.slice(1)).classList.toggle('on', p === page));
+  ['home', 'host', 'join'].forEach(p => document.getElementById('nav' + p[0].toUpperCase() + p.slice(1)).classList.toggle('on', p === page));
+  document.body.style.background = PAGE_TYPE[page] || 'var(--paper)';
+  window.scrollTo(0, 0);
+  if (page === 'host' && !window.__hostInited) { window.__hostInited = true; HOST_INIT(); }
+  if (page === 'join' && !window.__joinInited) { window.__joinInited = true; JOIN_INIT(); }
+}
+window.gxGo = gxGo;
+
+/* ---- 内联资源包 ---- */
+const PACK = {"icons":{"bow":{"shape":"M20 80 Q50 20 80 80 M20 80 L80 80 M50 50 L50 80 M30 68 L70 68","c0":"#ff9f6b","c1":"#e8503f"},"tree":{"shape":"M50 88 L50 55 M50 20 L25 62 L75 62 Z M50 42 L30 78 L70 78 Z","c0":"#7ed957","c1":"#3f9e2e"},"tangerine":{"shape":"<circle cx=\"50\" cy=\"58\" r=\"30\"/><path d=\"M50 28 L58 16 M50 28 Q62 20 70 26\" stroke-width=\"6\"/>","c0":"#ffb648","c1":"#e88a1f"},"sword":{"shape":"M50 12 L60 30 L55 78 L50 88 L45 78 L40 30 Z M28 62 L72 62","c0":"#c9d6e8","c1":"#7a8ba3"},"crown":{"shape":"M18 72 L18 34 L34 50 L50 24 L66 50 L82 34 L82 72 Z","c0":"#ffd94a","c1":"#e8a71f"},"sun":{"shape":"<circle cx=\"50\" cy=\"50\" r=\"20\"/><path d=\"M50 10 L50 22 M50 78 L50 90 M10 50 L22 50 M78 50 L90 50 M22 22 L30 30 M70 70 L78 78 M78 22 L70 30 M30 70 L22 78\" stroke-width=\"7\"/>","c0":"#ffd94a","c1":"#ff9f1f"},"road":{"shape":"M50 8 L42 92 M50 8 L58 92 M50 30 L50 42 M50 56 L50 68","c0":"#a89c8f","c1":"#6e6357"},"mouth":{"shape":"M20 40 Q50 22 80 40 Q50 78 20 40 Z","c0":"#ff8fa3","c1":"#e8536e"},"ring":{"shape":"<circle cx=\"50\" cy=\"50\" r=\"32\" fill=\"none\" stroke-width=\"10\"/>","c0":"#8fd4ff","c1":"#3f9ed4"},"walk":{"shape":"M50 12 A10 10 0 1 0 50 32 A10 10 0 1 0 50 12 M42 40 L58 40 L54 62 L62 88 M46 62 L38 88","c0":"#b8a9d9","c1":"#7a63a8"},"baby":{"shape":"<circle cx=\"50\" cy=\"34\" r=\"18\"/><path d=\"M30 58 Q50 50 70 58 L74 86 L26 86 Z\"/><path d=\"M44 30 L44 36 M56 30 L56 36\" stroke-width=\"5\"/>","c0":"#ffc9de","c1":"#e87aa3"},"horse":{"shape":"M28 84 L28 50 Q28 24 56 22 L78 30 L72 40 L60 38 Q74 46 76 62 L76 84 M38 62 L38 84 M64 62 L64 84","c0":"#c98b5c","c1":"#8f5a35"},"red":{"shape":"<circle cx=\"50\" cy=\"50\" r=\"34\"/>","c0":"#ff5c5c","c1":"#c62828"},"beard":{"shape":"M24 40 Q50 26 76 40 Q74 74 50 88 Q26 74 24 40 Z","c0":"#a89c8f","c1":"#5d5348"},"forest":{"shape":"M24 84 L24 44 M24 26 L10 52 L38 52 Z M50 84 L50 34 M50 18 L32 48 L68 48 Z M76 84 L76 48 M76 32 L62 54 L90 54 Z","c0":"#5cb85c","c1":"#2e7d32"},"person":{"shape":"<circle cx=\"50\" cy=\"28\" r=\"16\"/><path d=\"M20 88 Q50 54 80 88 Z\"/>","c0":"#9ec5ff","c1":"#4a7fd4"},"tower":{"shape":"M30 88 L30 26 L70 26 L70 88 M38 26 L38 12 L62 12 L62 26 M42 40 L50 40 M42 56 L50 56 M42 72 L50 72","c0":"#b8c4d4","c1":"#6e7f96"},"net":{"shape":"M18 18 L82 82 M82 18 L18 82 M18 50 L82 50 M50 18 L50 82 M18 18 L82 18 L82 82 L18 82 Z","c0":"#d9d9d9","c1":"#8f8f8f"},"ear":{"shape":"M62 22 Q34 22 34 48 Q34 62 42 70 Q46 78 40 86 M56 44 Q56 60 46 66","c0":"#ffbfa3","c1":"#d4845c"},"bridge":{"shape":"M12 70 L88 70 M12 70 Q50 30 88 70 M32 70 L32 54 M68 70 L68 54","c0":"#c9a06b","c1":"#8f6a3f"},"house":{"shape":"M16 48 L50 20 L84 48 L84 86 L16 86 Z M40 86 L40 62 L60 62 L60 86","c0":"#ffd9a3","c1":"#d4a03f"},"thanks":{"shape":"<circle cx=\"50\" cy=\"26\" r=\"14\"/><path d=\"M26 80 Q50 46 74 80\" stroke-width=\"10\" fill=\"none\"/>","c0":"#ffd9e8","c1":"#d47aa3"},"sugar":{"shape":"M22 62 L50 34 L78 62 L50 90 Z M50 34 L50 90","c0":"#fff0d9","c1":"#e8c07a"},"promise":{"shape":"M28 26 L28 76 M28 30 Q50 18 72 30 L72 76 Q50 64 28 76","c0":"#ffd94a","c1":"#d4a01f"},"cold":{"shape":"M50 12 L50 88 M20 30 L80 70 M80 30 L20 70 M50 30 L62 22 M50 30 L38 22 M50 70 L62 78 M50 70 L38 78","c0":"#a3d9ff","c1":"#4a9ed4"},"lamp":{"shape":"M26 40 Q50 16 74 40 L74 66 L26 66 Z M50 66 L50 82 M36 88 L64 88","c0":"#ffe88f","c1":"#d4ad1f"},"grass":{"shape":"M50 88 L50 46 M50 60 L26 40 M50 60 L74 40 M50 70 L34 58 M50 70 L66 58","c0":"#8fdc6b","c1":"#4a9e2e"},"drum":{"shape":"<ellipse cx=\"50\" cy=\"34\" rx=\"34\" ry=\"14\"/><path d=\"M16 34 L16 72 Q50 90 84 72 L84 34\"/><path d=\"M32 20 L38 22 M64 20 L62 24\" stroke-width=\"5\"/>","c0":"#e8a06b","c1":"#a86a35"},"layer":{"shape":"M50 16 L88 38 L50 60 L12 38 Z M12 56 L50 78 L88 56 M12 72 L50 94 L88 72","c0":"#c9b8d9","c1":"#8f7aa8"},"flute":{"shape":"M10 60 L90 40 M10 60 L10 68 L90 48 L90 40 M30 54 L30 62 M52 48 L52 56 M74 42 L74 50","c0":"#d4b88f","c1":"#9e7a4a"},"field":{"shape":"M12 30 L88 30 M12 50 L88 50 M12 70 L88 70 M38 30 L38 70 M64 30 L64 70","c0":"#a3d96b","c1":"#5c9e2e"},"supervise":{"shape":"<circle cx=\"50\" cy=\"44\" r=\"28\"/><path d=\"M50 72 L50 88 M30 88 L70 88\"/>","c0":"#9ed4ff","c1":"#4a8fd4"},"round":{"shape":"<circle cx=\"50\" cy=\"50\" r=\"34\"/>","c0":"#ffd9b8","c1":"#d49e6b"},"basin":{"shape":"M16 40 L84 40 L74 82 L26 82 Z","c0":"#a8d4d9","c1":"#5c9ea8"},"vegetable":{"shape":"M50 88 L50 44 M50 44 Q30 44 26 26 Q46 24 50 44 M50 44 Q70 44 74 26 Q54 24 50 44","c0":"#7ed957","c1":"#3f9e2e"},"general":{"shape":"<circle cx=\"50\" cy=\"30\" r=\"16\"/><path d=\"M50 46 L50 78 M24 54 L76 54 M34 78 L66 78\"/><path d=\"M40 12 L50 4 L60 12\" stroke-width=\"5\" fill=\"none\"/>","c0":"#d9a3a3","c1":"#a84a4a"},"fish":{"shape":"M18 50 Q42 26 68 50 Q42 74 18 50 Z M68 50 L88 32 L88 68 Z M36 44 A3 3 0 1 0 36 50","c0":"#6bc9ff","c1":"#2e7fd4"},"belly":{"shape":"<ellipse cx=\"50\" cy=\"54\" rx=\"30\" ry=\"34\"/>","c0":"#ffc9a3","c1":"#d47a4a"},"nail":{"shape":"M42 14 L58 14 L58 66 L50 84 L42 66 Z","c0":"#c9d0d9","c1":"#7a8796"},"deep":{"shape":"M12 24 L88 24 M20 42 L80 42 M30 60 L70 60 M40 78 L60 78","c0":"#5c8fd4","c1":"#2e5a9e"},"furnace":{"shape":"M24 74 L24 40 Q50 18 76 40 L76 74 Z M36 74 L36 50 Q50 36 64 50 L64 74","c0":"#ff9f6b","c1":"#d45c2e"},"tall":{"shape":"M22 88 L22 30 L50 12 L78 30 L78 88 M38 88 L38 52 L62 52 L62 88","c0":"#b8c9d9","c1":"#6e8296"},"awake":{"shape":"M50 16 L50 84 M26 34 Q50 18 74 34 M26 66 Q50 82 74 66 M18 50 L82 50","c0":"#a3ffd9","c1":"#4ad4a3"},"task":{"shape":"M26 14 L74 14 L74 86 L26 86 Z M36 34 L64 34 M36 50 L64 50 M36 66 L52 66","c0":"#d9c9ff","c1":"#8f6ed4"},"ginger":{"shape":"M50 24 Q66 24 68 42 Q70 60 54 68 L54 82 L46 82 L46 68 Q30 60 32 42 Q34 24 50 24 Z","c0":"#e8c07a","c1":"#a8863f"},"fan":{"shape":"M50 78 L18 30 Q50 12 82 30 Z M50 78 L50 40 M50 78 L32 38 M50 78 L68 38","c0":"#ffd9c9","c1":"#d49e7a"},"mountain":{"shape":"M8 82 L34 32 L52 58 L66 42 L92 82 Z M34 32 L40 44 L28 44 Z","c0":"#b8c4b8","c1":"#6e826e"},"clock":{"shape":"<circle cx=\"50\" cy=\"50\" r=\"34\"/><path d=\"M50 26 L50 50 L68 62\"/>","c0":"#ffd94a","c1":"#d4a01f"},"rock":{"shape":"M16 72 L32 34 L56 28 L84 56 L74 78 L28 82 Z","c0":"#b8b0a3","c1":"#7a7268"},"land":{"shape":"M10 70 L34 46 L62 66 L90 40 M10 82 L90 82","c0":"#d9c9a3","c1":"#a89060"},"white":{"shape":"<circle cx=\"50\" cy=\"50\" r=\"30\" fill=\"#ffffff\" stroke=\"#c9c9c9\" stroke-width=\"4\"/>","c0":"#ffffff","c1":"#c9c9c9"},"square":{"shape":"M22 22 L78 22 L78 78 L22 78 Z","c0":"#a3c9ff","c1":"#4a7fd4"},"dragon":{"shape":"M14 62 Q30 30 54 46 Q70 56 84 38 M22 60 L18 78 M84 38 L88 22 M46 44 L52 56","c0":"#ff8f6b","c1":"#d44a2e"},"gold":{"shape":"<ellipse cx=\"50\" cy=\"60\" rx=\"32\" ry=\"20\"/><path d=\"M30 44 L42 30 L58 42 L70 26 L72 60\"/>","c0":"#ffd94a","c1":"#e8a71f"},"river":{"shape":"M6 26 Q26 14 44 26 Q62 38 82 26 M6 50 Q26 38 44 50 Q62 62 82 50 M6 74 Q26 62 44 74 Q62 86 82 74","c0":"#6bc9ff","c1":"#2e7fd4"},"master":{"shape":"<circle cx=\"50\" cy=\"28\" r=\"14\"/><path d=\"M28 86 Q50 52 72 86 M34 62 L66 62\"/>","c0":"#d9b8a3","c1":"#a87a5c"},"none":{"shape":"<circle cx=\"50\" cy=\"50\" r=\"32\" fill=\"none\" stroke-width=\"8\"/><path d=\"M28 28 L72 72\" stroke-width=\"8\"/>","c0":"#c9c9c9","c1":"#8f8f8f"},"tenThousand":{"shape":"M12 30 L88 30 M50 30 L50 82 M24 58 L76 58 M24 82 L76 82","c0":"#ffd9a3","c1":"#d4a03f"},"segment":{"shape":"M14 34 L86 34 L86 50 L14 50 Z M14 62 L68 62 L68 78 L14 78 Z","c0":"#b8d9c9","c1":"#6e9e82"},"thunder":{"shape":"M56 10 L26 54 L46 54 L38 90 L72 44 L52 44 Z","c0":"#ffe84a","c1":"#d4b81f"},"marquis":{"shape":"M26 20 L74 20 L74 36 L26 36 Z M34 36 L34 72 M50 36 L50 72 M66 36 L66 72 M22 88 L78 88","c0":"#d9c9a3","c1":"#a89060"},"good":{"shape":"<path d=\"M20 52 L40 74 L82 26\" stroke-width=\"14\" fill=\"none\" stroke-linecap=\"round\"/>","c0":"#a3ffb8","c1":"#4ad46b"},"hole":{"shape":"<circle cx=\"50\" cy=\"50\" r=\"30\" fill=\"none\" stroke-width=\"10\"/>","c0":"#8f8f8f","c1":"#4a4a4a"},"plus":{"shape":"M50 22 L50 78 M22 50 L78 50","c0":"#a3ffd9","c1":"#4ad4a3"},"rain":{"shape":"M22 34 Q22 16 44 18 Q52 8 66 16 Q82 20 80 34 L24 34 Z M34 48 L28 70 M50 48 L44 70 M66 48 L60 70","c0":"#8fd4ff","c1":"#3f8fd4"},"scale":{"shape":"M50 20 L50 84 M26 84 L74 84 M26 32 L74 32 M20 32 L12 52 L30 52 Z M68 32 L60 52 L78 52 Z M50 20 L26 32 M50 20 L74 32","c0":"#c9d0d9","c1":"#6e7a8f"},"sunrise":{"shape":"M14 74 L86 74 M50 74 L50 44 M26 74 Q26 50 50 50 Q74 50 74 74 M22 26 L30 34 M50 18 L50 30 M78 26 L70 34","c0":"#ffd96b","c1":"#ff8f3f"},"thought":{"shape":"M34 34 Q20 34 20 48 Q20 58 30 60 Q26 74 40 74 Q44 84 56 84 Q70 84 70 72 L76 60 Q86 56 84 44 Q82 32 66 32 Z","c0":"#d9c9ff","c1":"#8f6ed4"},"telescope":{"shape":"M14 56 L58 30 L68 46 L24 72 Z M62 36 L84 22 L90 32 L68 46 Z M40 62 L44 86 M30 88 L58 88","c0":"#8fb8d9","c1":"#4a7a9e"},"snow":{"shape":"M50 12 L50 88 M20 30 L80 70 M80 30 L20 70 M50 32 L62 22 M50 32 L38 22 M50 68 L62 78 M50 68 L38 78","c0":"#d9f0ff","c1":"#8fc9e8"},"sunny":{"shape":"<circle cx=\"50\" cy=\"46\" r=\"22\"/><path d=\"M50 8 L50 20 M50 72 L50 84 M8 46 L20 46 M80 46 L92 46 M20 16 L28 24 M72 68 L80 76 M80 16 L72 24 M28 68 L20 76\" stroke-width=\"7\"/><path d=\"M24 88 L76 88\" stroke-width=\"5\"/>","c0":"#ffe86b","c1":"#ffb81f"},"dawn":{"shape":"M50 62 L50 34 M28 62 Q28 44 50 44 Q72 44 72 62 M12 78 L88 78 M48 18 L48 28 M74 26 L68 34 M26 26 L32 34","c0":"#ffb86b","c1":"#d47a2e"},"compass":{"shape":"<circle cx=\"50\" cy=\"50\" r=\"34\"/><path d=\"M50 22 L60 54 L50 46 L40 54 Z\" fill=\"#d44a2e\"/><path d=\"M62 16 L56 26\" stroke-width=\"5\"/>","c0":"#ff8f6b","c1":"#c94a2e"},"book":{"shape":"M50 30 Q32 20 14 26 L14 78 Q32 72 50 82 Q68 72 86 78 L86 26 Q68 20 50 30 Z M50 30 L50 82","c0":"#b8a3d9","c1":"#7a5ca8"},"martial":{"shape":"M50 20 L50 64 M26 36 L74 36 M32 88 L50 64 L68 88","c0":"#ff9f6b","c1":"#c94a2e"},"bright":{"shape":"<circle cx=\"34\" cy=\"50\" r=\"18\"/><path d=\"M56 30 Q74 30 74 50 Q74 70 56 70 M84 50 L92 50\" stroke-width=\"6\" fill=\"none\"/>","c0":"#ffe86b","c1":"#ffb81f"},"light":{"shape":"M50 12 L62 44 L92 44 L68 64 L78 92 L50 72 L22 92 L32 64 L8 44 L38 44 Z","c0":"#fff0a3","c1":"#e8c04a"},"flower":{"shape":"<circle cx=\"50\" cy=\"50\" r=\"12\"/><ellipse cx=\"50\" cy=\"22\" rx=\"12\" ry=\"16\"/><ellipse cx=\"50\" cy=\"78\" rx=\"12\" ry=\"16\"/><ellipse cx=\"22\" cy=\"50\" rx=\"16\" ry=\"12\"/><ellipse cx=\"78\" cy=\"50\" rx=\"16\" ry=\"12\"/>","c0":"#ff8fb8","c1":"#d44a8f"},"graceful":{"shape":"M50 16 A12 12 0 1 0 50 40 M36 46 L64 46 L58 76 L66 90 M42 76 L34 90","c0":"#ffc9e8","c1":"#d47aa3"},"quiet":{"shape":"M50 16 A18 18 0 0 1 50 52 L68 52 A18 18 0 0 0 50 16 Z M30 78 Q50 70 70 78","c0":"#b8d9d9","c1":"#6e9e9e"},"happy":{"shape":"<circle cx=\"50\" cy=\"50\" r=\"30\"/><path d=\"M40 42 L40 48 M60 42 L60 48\" stroke-width=\"6\"/><path d=\"M36 58 Q50 72 64 58\" stroke-width=\"5\" fill=\"none\"/>","c0":"#ffe86b","c1":"#ffb81f"},"vast":{"shape":"M8 30 Q30 18 50 30 Q70 42 92 30 M8 54 Q30 42 50 54 Q70 66 92 54 M8 78 Q30 66 50 78 Q70 90 92 78","c0":"#6b9fff","c1":"#2e5fd4"},"wave":{"shape":"M8 40 Q28 20 50 40 Q72 60 92 40 M8 62 Q28 42 50 62 Q72 82 92 62","c0":"#5cc9ff","c1":"#2e8fd4"},"sea":{"shape":"M8 34 Q28 18 50 34 Q72 50 92 34 M8 56 Q28 40 50 56 Q72 72 92 56 M8 78 Q28 62 50 78 Q72 94 92 78","c0":"#3f9ed4","c1":"#1f5f9e"},"peak":{"shape":"M8 82 L34 30 L56 60 L70 44 L92 82 Z M34 30 L42 44 L26 44 Z","c0":"#b8c4d4","c1":"#6e7f96"},"crystal":{"shape":"M50 14 L78 46 L50 88 L22 46 Z M50 14 L50 88 M22 46 L78 46","c0":"#d9f0ff","c1":"#8fc9e8"},"fire":{"shape":"M50 12 Q66 36 60 52 Q74 46 74 62 Q74 84 50 88 Q26 84 26 62 Q26 46 40 52 Q34 36 50 12 Z","c0":"#ff8f4a","c1":"#d44a1f"},"target":{"shape":"<circle cx=\"50\" cy=\"50\" r=\"34\" fill=\"none\" stroke-width=\"8\"/><circle cx=\"50\" cy=\"50\" r=\"18\" fill=\"none\" stroke-width=\"8\"/><circle cx=\"50\" cy=\"50\" r=\"5\"/>","c0":"#ff6b6b","c1":"#c62828"},"muscle":{"shape":"M26 34 Q50 20 64 36 Q76 50 64 62 L36 78 Q20 62 26 34 Z M44 40 L56 52","c0":"#ffa36b","c1":"#d46a2e"},"bird":{"shape":"M50 30 A14 14 0 1 0 50 58 L34 78 L50 64 M64 34 L78 26 M64 44 L80 40","c0":"#8fd4ff","c1":"#4a9ed4"},"fly":{"shape":"M50 22 L50 76 M50 44 Q30 32 18 42 M50 44 Q70 32 82 42 M50 62 Q36 56 28 64 M50 62 Q64 56 72 64","c0":"#a3d9ff","c1":"#4a8fd4"},"trophy":{"shape":"M30 20 L70 20 L70 48 Q70 70 50 76 Q30 70 30 48 Z M30 26 L16 26 L16 44 Q16 56 30 56 M70 26 L84 26 L84 44 Q84 56 70 56 M50 76 L50 88 M34 88 L66 88","c0":"#ffd94a","c1":"#d4a01f"},"star":{"shape":"M50 12 L62 42 L94 42 L68 62 L78 92 L50 72 L22 92 L32 62 L6 42 L38 42 Z","c0":"#ffd94a","c1":"#e8a71f"},"rocket":{"shape":"M50 10 Q68 34 68 60 L60 78 L40 78 L32 60 Q32 34 50 10 Z M42 78 L34 90 M58 78 L66 90 M50 34 L50 50","c0":"#ff9f8f","c1":"#d44a3f"},"sky":{"shape":"M8 78 Q8 56 30 56 Q34 34 56 36 Q76 34 80 56 Q92 58 92 78 Z","c0":"#8fd4ff","c1":"#4a9ed4"},"cloud":{"shape":"M24 70 Q10 70 10 56 Q10 44 24 44 Q28 28 46 28 Q64 28 68 46 Q86 46 86 58 Q86 70 72 70 Z","c0":"#ffffff","c1":"#c9d9e8"},"wind":{"shape":"M10 34 L60 34 Q74 34 74 24 M10 52 L74 52 Q88 52 88 62 M10 70 L52 70","c0":"#b8d9e8","c1":"#6e9eb8"},"moon":{"shape":"M62 16 A34 34 0 1 0 62 84 A28 28 0 1 1 62 16 Z","c0":"#ffd96b","c1":"#d4a82e"},"water":{"shape":"M50 12 Q72 44 72 60 Q72 82 50 86 Q28 82 28 60 Q28 44 50 12 Z","c0":"#6bc9ff","c1":"#2e8fd4"},"leaf":{"shape":"M76 20 Q40 16 26 44 Q14 70 30 84 Q56 78 68 52 Q76 36 76 20 Z M30 84 Q48 56 68 36","c0":"#8fdc6b","c1":"#4a9e2e"},"fruit":{"shape":"<circle cx=\"50\" cy=\"58\" r=\"28\"/><path d=\"M50 30 L50 16 Q60 10 68 16\" stroke-width=\"6\"/>","c0":"#ff8f8f","c1":"#d44a4a"},"spring":{"shape":"M50 16 L50 84 M50 40 L26 26 M50 40 L74 26 M50 62 L30 52 M50 62 L70 52 M50 84 L34 74 M50 84 L66 74","c0":"#a3ffb8","c1":"#4ad46b"},"summer":{"shape":"<circle cx=\"50\" cy=\"46\" r=\"24\"/><path d=\"M50 8 L50 18 M50 74 L50 84 M8 46 L18 46 M82 46 L92 46 M20 16 L28 24 M72 68 L80 76 M80 16 L72 24 M28 68 L20 76\" stroke-width=\"7\"/><path d=\"M18 92 L82 92\" stroke-width=\"6\"/>","c0":"#ffd96b","c1":"#ff9f2e"},"autumn":{"shape":"M72 22 Q42 18 30 42 Q20 64 34 78 Q58 72 68 48 Q74 34 72 22 Z M34 78 Q50 54 66 38","c0":"#ffab6b","c1":"#d46a2e"},"winter":{"shape":"M50 14 L50 86 M22 32 L78 68 M78 32 L22 68 M50 34 L60 24 M50 34 L40 24 M50 66 L60 76 M50 66 L40 76","c0":"#d9f0ff","c1":"#8fc9e8"},"small":{"shape":"M40 40 L60 40 L60 60 L40 60 Z","c0":"#c9d9e8","c1":"#7a8f9e"},"big":{"shape":"M16 16 L84 16 L84 84 L16 84 Z","c0":"#ffb86b","c1":"#d47a2e"},"one":{"shape":"M38 26 L50 16 L50 84 M32 84 L68 84","c0":"#c9d0d9","c1":"#7a8796"},"music":{"shape":"M42 74 L42 26 L76 18 L76 66 M42 74 A10 10 0 1 1 22 74 A10 10 0 1 1 42 74 M76 66 A10 10 0 1 1 56 66 A10 10 0 1 1 76 66","c0":"#c9a3ff","c1":"#8f5cd4"},"paint":{"shape":"M50 14 Q22 14 22 44 Q22 66 44 66 L44 76 Q44 86 54 86 Q78 86 78 56 Q78 36 68 26 Q60 14 50 14 Z M40 30 A5 5 0 1 0 40 40 A5 5 0 1 0 40 30 M58 36 A5 5 0 1 0 58 46 A5 5 0 1 0 58 36","c0":"#ff8fb8","c1":"#d44a8f"},"chess":{"shape":"<circle cx=\"50\" cy=\"50\" r=\"32\"/><path d=\"M30 30 L70 70 M70 30 L30 70\" stroke-width=\"6\"/>","c0":"#a89c8f","c1":"#5d5348"},"piano":{"shape":"M14 26 L86 26 L86 74 L14 74 Z M32 26 L32 74 M50 26 L50 74 M68 26 L68 74 M32 26 L32 50 M50 26 L50 50 M68 26 L68 50","c0":"#e8e8e8","c1":"#8f8f8f"},"ball":{"shape":"<circle cx=\"50\" cy=\"50\" r=\"32\"/><path d=\"M50 18 L50 82 M18 50 L82 50 M28 28 Q50 50 72 72\" stroke-width=\"5\"/>","c0":"#ff9f6b","c1":"#d45c2e"},"lake":{"shape":"M8 50 Q28 36 50 50 Q72 64 92 50 M8 70 Q28 56 50 70 Q72 84 92 70 M30 30 Q50 20 70 30","c0":"#5cc9e8","c1":"#2e8fb8"},"bamboo":{"shape":"M32 88 L32 12 M68 88 L68 20 M24 34 L76 34 M24 58 L76 58 M24 80 L76 80","c0":"#7ed957","c1":"#3f9e2e"},"lotus":{"shape":"M50 86 L50 56 M50 56 Q28 56 24 34 Q46 30 50 56 M50 56 Q72 56 76 34 Q54 30 50 56 M50 56 Q34 40 40 22 Q54 34 50 56 M50 56 Q66 40 60 22 Q46 34 50 56","c0":"#ffa3d9","c1":"#d44a9e"},"peach":{"shape":"M50 84 Q22 66 26 42 Q30 24 50 32 Q70 24 74 42 Q78 66 50 84 Z M50 32 Q54 18 68 16","c0":"#ffb8a3","c1":"#d47a5c"},"pear":{"shape":"M50 84 Q30 70 34 50 Q38 34 50 40 Q62 34 66 50 Q70 70 50 84 Z M50 40 Q50 22 56 14","c0":"#d9ffa3","c1":"#8fbf4a"},"candy":{"shape":"<circle cx=\"50\" cy=\"50\" r=\"22\"/><path d=\"M28 50 L10 34 L12 66 Z M72 50 L90 34 L88 66 Z\"/>","c0":"#ff9fd9","c1":"#d44a9e"},"rice":{"shape":"M50 88 L50 44 M50 44 Q30 44 26 24 Q46 22 50 44 M50 44 Q70 44 74 24 Q54 22 50 44 M50 66 Q34 66 30 48 Q46 46 50 66 M50 66 Q66 66 70 48 Q54 46 50 66","c0":"#fff0d9","c1":"#d4b88f"},"bean":{"shape":"<circle cx=\"38\" cy=\"50\" r=\"16\"/><circle cx=\"64\" cy=\"46\" r=\"12\"/><path d=\"M30 24 Q50 12 70 22\" stroke-width=\"5\" fill=\"none\"/>","c0":"#a8d96b","c1":"#5c9e2e"},"cat":{"shape":"<circle cx=\"50\" cy=\"54\" r=\"26\"/><path d=\"M28 38 L22 14 L42 28 M72 38 L78 14 L58 28 M40 50 L40 56 M60 50 L60 56 M46 64 Q50 68 54 64\" stroke-width=\"5\" fill=\"none\"/>","c0":"#ffb86b","c1":"#d47a2e"},"tiger":{"shape":"<circle cx=\"50\" cy=\"54\" r=\"28\"/><path d=\"M28 34 L24 12 L42 26 M72 34 L76 12 L58 26 M28 46 L40 50 M72 46 L60 50 M38 58 L38 64 M62 58 L62 64 M42 72 Q50 78 58 72\" stroke-width=\"5\" fill=\"none\"/>","c0":"#ffa83f","c1":"#d47a1f"},"shell":{"shape":"M50 84 Q16 74 16 46 Q16 18 50 20 Q84 18 84 46 Q84 74 50 84 Z M50 20 L50 84 M32 26 L44 66 M68 26 L56 66","c0":"#ffd9c9","c1":"#d49e8f"},"gem":{"shape":"M50 12 L82 40 L50 88 L18 40 Z M18 40 L82 40 M50 12 L34 40 L50 88 L66 40 Z","c0":"#8fd4ff","c1":"#4a9ed4"},"jade":{"shape":"<circle cx=\"50\" cy=\"50\" r=\"30\"/><circle cx=\"50\" cy=\"50\" r=\"14\" fill=\"none\" stroke-width=\"7\"/>","c0":"#a3ffd9","c1":"#4ad4a3"},"treasure":{"shape":"M14 42 L86 42 L86 84 L14 84 Z M10 26 L90 26 L86 42 L14 42 Z M50 42 L50 84 M42 56 A8 8 0 1 0 58 56 A8 8 0 1 0 42 56","c0":"#ffd94a","c1":"#d4a01f"},"soldier":{"shape":"<circle cx=\"50\" cy=\"26\" r=\"14\"/><path d=\"M36 44 L64 44 L68 80 L32 80 Z M34 52 L20 66 M66 52 L80 66 M42 80 L38 92 M58 80 L62 92\"/>","c0":"#8f9eb8","c1":"#4a5a7a"},"sail":{"shape":"M50 12 L50 78 M50 20 Q76 40 74 70 L50 70 Z M46 30 L26 70 L46 70 Z","c0":"#ffffff","c1":"#c9d9e8"},"boat":{"shape":"M14 62 L86 62 L72 84 L28 84 Z M50 62 L50 22 M50 22 L76 50 L50 50 Z","c0":"#c9a06b","c1":"#8f6a3f"},"city":{"shape":"M16 88 L16 44 L34 44 L34 88 M34 88 L34 24 L56 24 L56 88 M56 88 L56 52 L82 52 L82 88 M24 56 L26 56 M24 68 L26 68 M44 36 L46 36 M44 48 L46 48 M66 64 L68 64","c0":"#b8c4d4","c1":"#6e7f96"},"peace":{"shape":"M50 14 Q34 14 34 32 Q34 46 46 52 L46 86 L54 86 L54 52 Q66 46 66 32 Q66 14 50 14 Z","c0":"#a3ffe8","c1":"#4ad4b8"},"health":{"shape":"M50 84 Q18 62 18 40 Q18 20 36 20 Q46 20 50 32 Q54 20 64 20 Q82 20 82 40 Q82 62 50 84 Z","c0":"#a3ffb8","c1":"#4ad46b"},"luck":{"shape":"M32 24 L32 76 M32 30 Q54 18 76 30 L76 76 Q54 64 32 76 M32 30 L18 30 M32 30 L46 30","c0":"#ff8f8f","c1":"#d43f3f"},"celebrate":{"shape":"M22 86 L38 44 L58 64 L86 22 M30 34 L34 30 M52 74 L56 70 M76 34 L80 30","c0":"#ffd96b","c1":"#ff9f2e"},"warm":{"shape":"M50 14 A14 14 0 0 1 50 42 Q66 42 66 60 Q66 82 50 88 Q34 82 34 60 Q34 42 50 42 A14 14 0 0 0 50 14 Z","c0":"#ffb86b","c1":"#d47a2e"},"everlasting":{"shape":"<circle cx=\"50\" cy=\"50\" r=\"30\" fill=\"none\" stroke-width=\"8\"/><path d=\"M50 20 L50 80 M20 50 L80 50\" stroke-width=\"5\"/>","c0":"#8fd4ff","c1":"#3f8fd4"},"long":{"shape":"M14 50 L62 50 M62 50 L50 38 M62 50 L50 62 M86 40 L86 60","c0":"#c9d0d9","c1":"#7a8796"},"new":{"shape":"M50 16 L50 84 M26 38 L74 38 M50 16 L34 32 L66 32","c0":"#a3ffd9","c1":"#4ad4a3"},"strong":{"shape":"M26 26 L26 74 M74 26 L74 74 M26 46 L74 46 M26 26 L74 74","c0":"#ff9f6b","c1":"#d45c2e"},"rise":{"shape":"M18 78 L46 46 L62 62 L86 24 M86 24 L70 24 M86 24 L86 42","c0":"#ffd94a","c1":"#d4a01f"},"ship":{"shape":"M18 74 L82 74 L74 52 L26 52 Z M50 52 L50 18 M50 18 L74 40 L50 40 Z","c0":"#8fb8d9","c1":"#4a7a9e"},"think":{"shape":"<path d=\"M40 30 Q20 30 20 48 Q20 60 32 62 L28 76 L44 68 Q50 72 58 70 Q78 68 78 50 Q78 32 58 30 Z\"/><circle cx=\"76\" cy=\"78\" r=\"7\"/>","c0":"#c9a3ff","c1":"#8f5cd4"},"quick":{"shape":"M50 16 L50 44 L76 44 L46 84 L52 54 L28 54 Z","c0":"#ffe86b","c1":"#ffb81f"},"brave":{"shape":"M50 14 L78 28 L78 54 Q78 76 50 88 Q22 76 22 54 L22 28 Z","c0":"#ff8f6b","c1":"#d44a2e"},"sincere":{"shape":"<circle cx=\"50\" cy=\"50\" r=\"30\" fill=\"none\" stroke-width=\"8\"/><circle cx=\"50\" cy=\"50\" r=\"12\"/>","c0":"#a3ffe8","c1":"#4ad4b8"},"justice":{"shape":"M50 16 L50 84 M26 84 L74 84 M50 26 L22 26 M50 26 L78 26 M22 26 L12 52 L32 52 Z M78 26 L68 52 L88 52 Z","c0":"#c9d0d9","c1":"#7a8796"},"ritual":{"shape":"M26 84 L26 34 L50 16 L74 34 L74 84 M34 50 L66 50 M50 34 L50 66","c0":"#ffd9c9","c1":"#d49e8f"},"respect":{"shape":"<circle cx=\"50\" cy=\"30\" r=\"14\"/><path d=\"M30 56 Q50 44 70 56 L70 84 L30 84 Z M42 70 L58 70\" stroke-width=\"5\" fill=\"none\"/>","c0":"#d9c9a3","c1":"#a89060"},"kind":{"shape":"M50 84 Q20 62 20 42 Q20 24 36 24 Q46 24 50 34 Q54 24 64 24 Q80 24 80 42 Q80 62 50 84 Z","c0":"#ffc9e8","c1":"#d47aa3"},"beauty":{"shape":"<circle cx=\"50\" cy=\"50\" r=\"14\"/><ellipse cx=\"50\" cy=\"18\" rx=\"10\" ry=\"14\"/><ellipse cx=\"50\" cy=\"82\" rx=\"10\" ry=\"14\"/><ellipse cx=\"18\" cy=\"50\" rx=\"14\" ry=\"10\"/><ellipse cx=\"82\" cy=\"50\" rx=\"14\" ry=\"10\"/><circle cx=\"30\" cy=\"30\" r=\"8\"/><circle cx=\"70\" cy=\"30\" r=\"8\"/><circle cx=\"30\" cy=\"70\" r=\"8\"/><circle cx=\"70\" cy=\"70\" r=\"8\"/>","c0":"#ff8fb8","c1":"#d44a8f"},"hope":{"shape":"M50 12 L50 60 M32 30 Q50 12 68 30 M22 44 Q50 20 78 44 M14 58 Q50 30 86 58","c0":"#a3ffe8","c1":"#4ad4b8"},"dream":{"shape":"M50 16 Q76 16 76 40 Q76 56 62 58 L62 70 L38 70 L38 58 Q24 56 24 40 Q24 16 50 16 Z M38 78 L62 78 M42 86 L58 86","c0":"#c9a3ff","c1":"#8f5cd4"},"sprout":{"shape":"M50 88 L50 48 M50 48 Q28 48 24 26 Q46 24 50 48 M50 48 Q72 48 76 26 Q54 24 50 48","c0":"#a3ffb8","c1":"#4ad46b"},"root":{"shape":"M50 12 L50 46 M50 46 Q34 46 26 62 Q34 78 50 78 Q66 78 74 62 Q66 46 50 46 M26 62 L14 74 M74 62 L86 74","c0":"#c9a06b","c1":"#8f6a3f"},"vine":{"shape":"M50 88 Q34 74 40 60 Q46 46 34 36 Q22 26 34 14 M60 66 Q72 56 66 46 Q60 36 70 26","c0":"#7ed957","c1":"#3f9e2e"},"feather":{"shape":"M76 20 Q56 16 40 34 Q24 52 24 76 L44 56 Q40 68 34 78 M44 56 Q62 54 70 40 Q76 30 76 20 Z","c0":"#e8f0ff","c1":"#a3b8d4"},"wing":{"shape":"M18 74 Q34 40 62 30 Q82 26 86 34 Q64 42 54 58 Q46 72 30 78 Z","c0":"#d9e8ff","c1":"#8fa8c9"},"mist":{"shape":"M8 34 Q28 22 50 34 Q72 46 92 34 M8 54 Q28 42 50 54 Q72 66 92 54 M8 74 Q28 62 50 74 Q72 86 92 74","c0":"#d9e8f0","c1":"#8fa8b8"},"seal":{"shape":"M50 16 L50 84 M26 32 L74 32 M26 32 L18 50 L34 50 Z M74 32 L66 50 L82 50 Z","c0":"#ff8f6b","c1":"#c94a2e"},"palace":{"shape":"M12 82 L88 82 L88 74 L12 74 Z M18 74 L18 46 L82 46 L82 74 M24 46 L50 22 L76 46 M34 74 L34 56 M50 74 L50 56 M66 74 L66 56","c0":"#ffd9a3","c1":"#d4a03f"},"window":{"shape":"M18 18 L82 18 L82 82 L18 82 Z M50 18 L50 82 M18 50 L82 50","c0":"#a3d9ff","c1":"#4a9ed4"},"elegant":{"shape":"M50 18 A12 12 0 1 0 50 42 M36 48 L64 48 L60 70 Q50 82 40 70 Z M46 70 L46 88","c0":"#ffd9e8","c1":"#d47aa3"},"humble":{"shape":"<circle cx=\"50\" cy=\"34\" r=\"16\"/><path d=\"M26 84 Q50 54 74 84\" stroke-width=\"9\" fill=\"none\"/>","c0":"#b8d9c9","c1":"#6e9e82"},"heart":{"shape":"M50 82 Q18 60 18 40 Q18 22 35 22 Q46 22 50 34 Q54 22 65 22 Q82 22 82 40 Q82 60 50 82 Z","c0":"#ff8fa3","c1":"#d44a6b"},"admire":{"shape":"<circle cx=\"50\" cy=\"28\" r=\"12\"/><path d=\"M30 84 Q50 56 70 84\" stroke-width=\"9\" fill=\"none\"/><path d=\"M14 20 L22 28 M86 20 L78 28\" stroke-width=\"5\"/>","c0":"#ffd96b","c1":"#d4a82e"},"engrave":{"shape":"M18 82 L82 82 M34 66 L66 66 M50 66 L50 22 M50 22 L34 38 M50 22 L66 38","c0":"#b8b0a3","c1":"#7a7268"},"memory":{"shape":"<circle cx=\"50\" cy=\"50\" r=\"30\" fill=\"none\" stroke-width=\"7\"/><path d=\"M50 26 L50 50 L66 62\" stroke-width=\"6\"/>","c0":"#c9a3ff","c1":"#8f5cd4"},"penguin":{"shape":"<ellipse cx=\"50\" cy=\"54\" rx=\"26\" ry=\"32\" fill=\"#4a4a5a\"/><ellipse cx=\"50\" cy=\"58\" rx=\"15\" ry=\"24\" fill=\"#ffffff\"/><circle cx=\"42\" cy=\"36\" r=\"4\" fill=\"#ffffff\"/><circle cx=\"58\" cy=\"36\" r=\"4\" fill=\"#ffffff\"/>","c0":"#4a4a5a","c1":"#1f1f2e"},"sunset":{"shape":"M10 78 L90 78 M50 78 L50 44 M26 78 Q26 50 50 50 Q74 50 74 78 M22 30 L30 38 M50 22 L50 34 M78 30 L70 38 M34 88 Q50 82 66 88","c0":"#ff8f6b","c1":"#d44a5e"},"rainbow":{"shape":"M14 74 Q14 30 50 30 Q86 30 86 74 M26 74 Q26 42 50 42 Q74 42 74 74 M38 74 Q38 54 50 54 Q62 54 62 74","c0":"#ff9fd9","c1":"#8f7ae8"},"talk":{"shape":"M20 26 Q20 16 32 16 L68 16 Q80 16 80 26 L80 52 Q80 62 68 62 L44 62 L28 78 L30 62 L32 62 Q20 62 20 52 Z","c0":"#ffc9a3","c1":"#d47a4a"},"dog":{"shape":"<ellipse cx=\"50\" cy=\"58\" rx=\"24\" ry=\"20\"/><circle cx=\"50\" cy=\"34\" r=\"16\"/><path d=\"M36 24 L30 8 L44 20 M64 24 L70 8 L56 20 M42 32 L42 38 M58 32 L58 38 M48 44 Q50 48 52 44 M30 60 L18 54 M70 60 L82 54\" stroke-width=\"4\" fill=\"none\"/>","c0":"#d9a06b","c1":"#a86a35"},"bell":{"shape":"M50 12 Q66 12 66 30 L66 52 L76 66 L24 66 L34 52 L34 30 Q34 12 50 12 Z M42 74 Q50 86 58 74 M50 4 L50 12","c0":"#ffd94a","c1":"#d4a82e"},"robot":{"shape":"<rect x=\"26\" y=\"30\" width=\"48\" height=\"40\" rx=\"8\"/><circle cx=\"40\" cy=\"48\" r=\"6\" fill=\"#4a8fa8\"/><circle cx=\"60\" cy=\"48\" r=\"6\" fill=\"#4a8fa8\"/><path d=\"M50 30 L50 16 M36 74 L36 86 M64 74 L64 86 M40 60 L60 60\" stroke-width=\"4\" fill=\"none\"/>","c0":"#a3d9e8","c1":"#4a8fa8"},"unknown":{"shape":"<circle cx=\"50\" cy=\"50\" r=\"34\" fill=\"none\" stroke-width=\"7\"/><path d=\"M38 40 Q38 26 50 26 Q62 26 62 38 Q62 48 50 50 L50 58\" stroke-width=\"7\" fill=\"none\" stroke-linecap=\"round\"/><circle cx=\"50\" cy=\"70\" r=\"5\"/>","c0":"#c9c9c9","c1":"#6e6e6e"}},"keys":["sun","moon","crown","tree","cat","wave","fire","mountain","flower","bird","bamboo","book","sword","road","horse","fish","dragon","river","lamp","clock","drum","flute","tower","bridge","house","boat","cloud","rain","star","snow","leaf","rice","gem","ring","bow","grass","field","forest","rock","gold","white","red","square","deep","tall"],"pool":[["🎹","从小弹钢琴"],["🏔️","爬过雪山"],["🍜","一个人吃过 8 碗面"],["🐍","被蛇追过"],["🎤","在 KTV 唱哭过人"],["🏊","横渡过江"],["🤡","拿过演讲比赛奖"],["🍳","能连做一周不重样早餐"],["📚","读过同一本书三遍"],["✨","黑进过学校系统"],["🚴","骑行 100 公里"],["🎬","上过电视"],["🪺","养过一只鸡"],["🎮","打游戏拿过名次"],["🌏","去过 5 个以上国家"],["🥁","会一门乐器"],["✂️","自己剪过头发"],["🧩","拼过 5000 片拼图"],["🦷","一次拔过 4 颗牙"],["🏆","得过第一名"]],"demo":{"鼠标":{"els":["moon","cat"],"color":"🎉"},"吕学长":{"els":["tree","crown"],"color":"🚀"},"馨馨":{"els":["flower","bird"],"color":"🧠"},"丞相":{"els":["sun","sword"],"color":"♟️"}}};
+let ICONS = PACK.icons;
+
+/* ---- 名称拆解（内联演示版） ---- */
+const ICON_KEYS = PACK.keys;
+function hashName(s) {
+  let h = 5381;
+  for (const ch of s) h = ((h << 5) + h + ch.codePointAt(0)) >>> 0;
+  return h;
+}
+function iconFor(ch) {
+  return ICON_KEYS[hashName(ch) % ICON_KEYS.length];
+}
+const WHY = {
+  moon: '月 — 夜里最亮的那块，藏着你的名',
+  cat: '猫 — 用谐音把姓改了个更好记的音',
+  crown: '冠 — 会意拆字，「冖」像一顶帽子扣在头上',
+  tree: '木 — 会意拆字，名里那棵树站着不动',
+  flower: '花 — 名里的草木偏旁开成了画',
+  bird: '鸟 — 谐音，念快了就是它',
+  sun: '日 — 会意，你名字里那个字本身就是太阳',
+  sword: '剑 — 谐音，锋利得像你的名字',
+};
+function whyFor(name, el, i) {
+  if (WHY[el]) return WHY[el];
+  if (i === 0) return `第 ${i + 1} 字「${name[i]}」的谐音，念两遍就出来了`;
+  return `第 ${i + 1} 字「${name[i]}」的会意拆字，把偏旁拆出来单独成画`;
+}
+function buildQuestion(name, els) {
+  const parts = [...name].map((ch, i) => ({ el: els[i % els.length], label: ch, why: whyFor(name, els[i % els.length], i) }));
+  const used = [...new Set(parts.map(p => p.el))];
+  return {
+    name, parts, emoji: DEMO_EMOJI[name] || '🎭',
+    reveal: `「${name}」—— ` + used.map(e => `${ICONS[e] ? '' : ''}${(WHY[e] || '一个字').split(' —')[0]}`).join(' · ') + '。谐音与会意两条线索叠在一起，猜过就忘不掉。',
+    compat: { unknown: 0 },
+  };
+}
+const DEMO_EMOJI = {};
+Object.keys(PACK.demo).forEach((n, i) => DEMO_EMOJI[n] = ['🎉', '🚀', '🧠', '♟️', '⚡', '🎨'][i % 6]);
+
+/* ---- 演示用自我介绍池 ---- */
+const POOL_SRC = PACK.pool;
+function poolFor(seed) {
+  const h = hashName(seed);
+  const out = [];
+  for (let i = 0; i < 12; i++) {
+    const p = POOL_SRC[(h + i * 7) % POOL_SRC.length];
+    if (!out.some(o => o.t === p[1])) out.push({ e: p[0], t: p[1] });
+    if (out.length >= 12) break;
+  }
+  return out;
+}
+
+/* ---- 图标 SVG 渲染（与服务端 icons.js 同构） ---- */
+function iconHTML(el, size) {
+  size = size || 76;
+  const d = ICONS[el] || ICONS.unknown;
+  if (!d) return '';
+  const shape = d.shape;
+  const isPath = !shape.trim().startsWith('<');
+  const inner = isPath
+    ? `<path d="${shape}" fill="${d.c0}" stroke="${d.c1}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>`
+    : `<g fill="${d.c0}" stroke="${d.c1}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">${shape}</g>`;
+  return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
+}
+
+/* ---- 简易二维码绘制 ---- */
+function drawQR(canvas, text) {
+  try {
+    const m = QR.make(text);
+    if (!m) throw 0;
+    const n = m.length, pad = 4, scale = Math.max(1, Math.floor(canvas.width / (n + pad * 2)));
+    canvas.width = canvas.height = (n + pad * 2) * scale;
+    canvas.style.width = canvas.style.height = '190px';
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#17141f';
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (m[y][x]) ctx.fillRect((x + pad) * scale, (y + pad) * scale, scale, scale);
+    return true;
+  } catch (e) { return false; }
+}
+</script>
+
+<script>
+/* ======================= 主持屏逻辑（单文件演示版） ======================= */
+let ws = null, code = '', questions = [], qIndex = -1, revealed = false;
+let sessionMembers = [];
+
+function $(id) { return document.getElementById(id); }
+function toast(m) {
+  const t = $('toast'); t.textContent = m; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2400);
+}
+function show(id) {
+  ['viewLobby', 'viewGen', 'viewPlay', 'viewResult'].forEach(v => $(v).style.display = 'none');
+  $(id).style.display = '';
+}
+
+function HOST_INIT() {
+  code = String(Math.floor(1000 + Math.random() * 9000));
+  $('codeTxt').textContent = code;
+  const joinUrl = location.origin + location.pathname + '?code=' + code;
+  $('joinUrl').textContent = joinUrl;
+  if (!drawQR($('qrCv'), joinUrl)) {
+    $('qrCv').outerHTML = '<div style="color:#8d84a0;font-size:12px;width:190px;text-align:center;padding-top:70px">二维码生成失败<br>请手动输入房间码</div>';
+  }
+  show('viewLobby');
+  renderMembers([]);
+  $('phaseTxt').textContent = '等待加入';
+  // 演示：自动加入 4 位组员
+  let i = 0;
+  const names = Object.keys(PACK.demo);
+  const timer = setInterval(() => {
+    if (i >= names.length) { clearInterval(timer); return; }
+    const n = names[i++];
+    sessionMembers.push({ id: 'm' + i, name: n, emoji: PACK.demo[n].color, color: PACK.demo[n].color, hasProfile: false });
+    renderMembers(sessionMembers);
+    setTimeout(() => { const m = sessionMembers[sessionMembers.length - 1]; if (m) { m.hasProfile = true; renderMembers(sessionMembers); } }, 700);
+  }, 850);
+}
+
+function renderMembers(list) {
+  const withProfile = list.filter(m => m.hasProfile).length;
+  $('cntTxt').textContent = list.length ? `${list.length} 人（${withProfile} 人已填自我介绍）` : '';
+  if (!list.length) {
+    $('mlist').innerHTML = '<div class="empty">等待组员扫码加入…</div>';
+    renderStartBtn(list);
+    return;
+  }
+  $('mlist').innerHTML = list.map(m =>
+    `<div class="mcard">
+      <div class="av" style="background:${m.color}33">${m.emoji}</div>
+      <div class="nm">${m.name}</div>
+      <div class="tag ${m.hasProfile ? 'ok' : ''}">${m.hasProfile ? '已就绪 ✓' : '待填写'}</div>
+    </div>`).join('');
+  renderStartBtn(list);
+}
+
+function renderStartBtn(list) {
+  let bar = document.querySelector('#viewLobby .startbar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.className = 'hostbar startbar';
+    $('viewLobby').appendChild(bar);
+    bar.innerHTML = '<button class="btn" id="btnStart" onclick="doStart()">开始生成 🪄</button><div class="hint" id="sh"></div>';
+  }
+  const btn = $('btnStart');
+  btn.disabled = list.length === 0;
+  btn.classList.toggle('breathe', list.length > 0);
+  $('sh').textContent = list.length === 0 ? '至少 1 人加入' : '';
+}
+
+/* ---- 生成流程（本地模拟 AI 拆字） ---- */
+function doStart() {
+  const names = sessionMembers.length ? sessionMembers.map(m => m.name) : Object.keys(PACK.demo);
+  show('viewGen');
+  $('phaseTxt').textContent = '生成中';
+  $('pipeline').innerHTML = '<div class="pstep on" id="ps0"><div class="sp"></div><span class="lb">收取名字与自我介绍</span></div>';
+  genProgress = [];
+  questions = [];
+  const live = sessionMembers.length ? sessionMembers : Object.keys(PACK.demo).map((n, i) => ({ id: 'd' + i, name: n }));
+  live.forEach((m, i) => {
+    setTimeout(() => {
+      const els = PACK.demo[m.name] ? PACK.demo[m.name].els : [iconFor([...m.name][0]), iconFor([...m.name][1] || [...m.name][0])];
+      const q = buildQuestion(m.name, els);
+      q.profile = demoProfile(m.name, q);
+      questions[i] = q;
+      genProgress[i] = { name: m.name, els: els.map(e => e), compat: q.compat };
+      renderPipeline(live, i);
+      if (i === live.length - 1) {
+        $('pipeline').innerHTML += '<div class="pstep on done-all"><span class="ck">✓</span><span class="lb">全部就绪，可以开始竞猜</span></div>';
+        setTimeout(() => { show('viewPlay'); $('phaseTxt').textContent = '进行中'; qIndex = -1; nextQ(); }, 900);
+      }
+    }, 700 * (i + 1));
+  });
+}
+let genProgress = [];
+function renderPipeline(live, upto) {
+  let html = '<div class="pstep on"><span class="ck">✓</span><span class="lb">收取名字与自我介绍</span></div>';
+  for (let i = 0; i <= upto; i++) {
+    const done = i < upto;
+    html += `<div class="pstep on">${done ? '<span class="ck">✓</span>' : '<div class="sp"></div>'}
+      <span class="lb">${live[i].name}</span>
+      <span class="els">${(genProgress[i] ? genProgress[i].els : []).join(' · ')}</span></div>`;
+  }
+  $('pipeline').innerHTML = html;
+}
+
+/* ---- 演示：两真一假自我介绍 ---- */
+function demoProfile(name, q) {
+  const p = poolFor(name);
+  const lie = hashName(name) % 3;
+  return [0, 1, 2].map(i => ({ e: p[i].e, t: p[i].t, lie: i === lie }));
+}
+
+/* ==================== 出题渲染 ==================== */
+function nextQ() {
+  qIndex++;
+  if (qIndex >= questions.length) return finish();
+  revealed = false;
+  const q = questions[qIndex];
+
+  $('dots').innerHTML = questions.map((_, i) =>
+    `<div class="dot ${i < qIndex ? 'past' : ''} ${i === qIndex ? 'now' : ''}"></div>`).join('');
+
+  $('cardCount').textContent = q.parts.length;
+  $('cards').innerHTML = q.parts.map((p, i) =>
+    `<div class="qcard" id="qc${i}"><div class="inner">
+      <div class="f front">${iconHTML(p.el, 80)}<div class="lb">${p.label}</div></div>
+      <div class="f back"><div class="c">${p.label.charAt(0)}</div><div class="n"></div></div>
+    </div></div>`).join('');
+
+  $('answer').classList.remove('show');
+  $('egg').classList.remove('show');
+  $('mic').classList.remove('show');
+  $('btnReveal').style.display = '';
+  $('btnReveal').disabled = false;
+  $('btnEgg').style.display = 'none';
+  $('btnNext').style.display = 'none';
+  $('phaseTxt').textContent = `进行中 ${qIndex + 1}/${questions.length}`;
+}
+
+function doReveal() {
+  if (revealed) return;
+  revealed = true;
+  const q = questions[qIndex];
+  $('btnReveal').style.display = 'none';
+
+  q.parts.forEach((p, i) => {
+    setTimeout(() => {
+      const card = $('qc' + i);
+      if (!card) return;
+      card.querySelector('.back .c').textContent = p.label.charAt(0);
+      card.querySelector('.back .n').textContent = p.why.replace(/^「.」：/, '');
+      card.classList.add('flip');
+    }, i * 480);
+  });
+
+  setTimeout(() => {
+    $('aWho').textContent = '就是 —— ' + q.name + '！';
+    $('aWhy').textContent = q.reveal;
+    $('answer').classList.add('show');
+    $('btnEgg').style.display = '';
+  }, q.parts.length * 480 + 480);
+}
+
+function doEgg() {
+  const q = questions[qIndex];
+  $('btnEgg').style.display = 'none';
+  $('eggCards').innerHTML = q.profile.map(p =>
+    `<div class="eggc"><div class="e">${p.e}</div><div class="t">${p.t}</div><div class="m">押这句？</div></div>`).join('');
+  $('egg').classList.add('show');
+
+  setTimeout(() => {
+    const cards = document.querySelectorAll('#eggCards .eggc');
+    q.profile.forEach((p, i) => {
+      if (!cards[i]) return;
+      cards[i].classList.add(p.lie ? 'lie' : 'truth');
+      cards[i].querySelector('.m').textContent = p.lie ? '假的！' : '真的 ✓';
+    });
+    $('mic').innerHTML = `🎤 轮到 <b>${q.name}</b> 本人开讲：挑一句真的展开说说（30 秒），大家随便追问 👀`;
+    $('mic').classList.add('show');
+    $('btnNext').style.display = '';
+    $('btnNext').textContent = qIndex === questions.length - 1 ? '查看结果 🎉' : '下一题 →';
+  }, 900);
+}
+
+function finish() {
+  show('viewResult');
+  $('phaseTxt').textContent = '已结束';
+  let html = '<div class="muted" style="margin-bottom:14px">这局挖到的真实情报 —— 直接就是一份带脸的技能花名册</div>';
+  questions.forEach(q => {
+    const chips = q.profile.filter(p => !p.lie)
+      .map(p => `<span style="display:inline-block;background:rgba(255,255,255,.1);border-radius:20px;padding:5px 12px;font-size:12.5px;margin:3px 4px 0 0;color:#e0d8ea">${p.e} ${p.t}</span>`).join('');
+    html += `<div style="padding:14px 0;border-bottom:1px dashed rgba(255,255,255,.12)">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:22px">${q.emoji}</div>
+        <div style="color:#fff;font-size:17px;font-weight:900">${q.name}</div>
+        <div style="display:flex;gap:6px;margin-left:auto">${q.parts.map(p => iconHTML(p.el, 32)).join('')}</div>
+      </div>
+      <div style="margin-top:8px">${chips}</div>
+    </div>`;
+  });
+  $('resultBody').innerHTML = html;
+}
+
+function gxReset() {
+  sessionMembers = []; questions = []; qIndex = -1; window.__hostInited = true;
+  HOST_INIT();
+}
+window.gxReset = gxReset;
+window.gxJumpDemo = function () { };   // 进入主持屏即自动演示
+</script>
+
+<script>
+/* ======================= 手机加入逻辑（内联演示版） ======================= */
+let myId = '', myName = '';
+let pool = [], selected = [], lieIndex = -1;
+let allMembers = [];
+
+function showJ(id) {
+  ['s1', 's2', 's3', 's4', 's5'].forEach(s => $(s).style.display = 'none');
+  if (id) $(id).style.display = '';
+}
+
+function JOIN_INIT() {
+  const params = new URLSearchParams(location.search);
+  const qcode = params.get('code') || '';
+  $('s1').innerHTML = `
+    <h1 class="logo">名场面</h1>
+    <p class="muted center" style="margin-top:8px">输入房间码加入</p>
+    <span class="emoji-big">🔢</span>
+    <input type="text" class="code" id="codeInput" placeholder="0000" maxlength="4" inputmode="numeric">
+    <p class="hint center" style="color:var(--primary);min-height:18px" id="errBox2">${qcode ? '房间码 ' + qcode + '（本机演示可直接下一步）' : ''}</p>`;
+  if (qcode) $('codeInput').value = qcode;
+  $('actionBar').innerHTML = '<button class="btn" onclick="goCode()">下一步</button>';
+  $('codeInput').addEventListener('keydown', e => { if (e.key === 'Enter') goCode(); });
+}
+
+function goCode() {
+  const v = ($('codeInput').value || '').trim();
+  if (!/^\d{4}$/.test(v)) { $('errBox2').textContent = '请输入 4 位房间码'; return; }
+  code = v;
+  showJ('s1');
+  $('s1').innerHTML = `
+    <h1 class="logo">名场面</h1>
+    <p class="muted center" style="margin-top:8px">输入你的名字，加入这场猜谜</p>
+    <span class="emoji-big">🎭</span>
+    <input type="text" id="nameInput" placeholder="你的名字（真名最好，大家要记的就是它）" maxlength="8">
+    <p class="hint center" id="errBox" style="color:var(--primary);min-height:18px"></p>`;
+  $('actionBar').innerHTML = `<button class="btn" onclick="joinNow()">加入房间 ${code}</button>`;
+  $('nameInput').focus();
+  $('nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinNow(); });
+}
+
+function joinNow() {
+  const n = ($('nameInput').value || '').trim();
+  if (!n) { $('errBox').textContent = '请输入名字'; return; }
+  myName = n; myId = 'me';
+  pool = poolFor(n);
+  renderPool();
+  showJ('s2');
+  $('actionBar').innerHTML = '<button class="btn" id="sb" disabled onclick="submitProfile()">提交</button>';
+  allMembers = Object.keys(PACK.demo).map((nm, i) => ({ id: 'm' + (i + 1), name: nm, emoji: '🎉', color: '#ff6b5e' }));
+  allMembers.push({ id: 'me', name: n, emoji: '🙋', color: '#2ec4a6' });
+}
+
+function renderMembersJ() {
+  $('memberList').innerHTML = allMembers.map(m =>
+    `<div class="member">
+      <div class="av" style="background:${m.color}22">${m.emoji}</div>
+      <div class="nm">${m.name}${m.id === myId ? ' <span style="color:var(--primary);font-size:11px">(你)</span>' : ''}</div>
+    </div>`).join('');
+}
+
+function renderPool() {
+  $('pool').innerHTML = pool.map((p, i) => {
+    const sel = selected.includes(i);
+    return `<div class="pitem ${sel ? 'sel' : ''} ${lieIndex === i ? 'lie' : ''}" onclick="toggle(${i})">
+      <span class="mark">假的</span>
+      <span class="pe">${p.e}</span><span>${p.t}</span>
+    </div>`;
+  }).join('');
+  $('counter').innerHTML = '已选 <b>' + selected.length + '</b> / 3';
+  const sb = $('sb');
+  if (sb) { sb.disabled = selected.length !== 3; sb.classList.toggle('breathe', selected.length === 3); }
+}
+
+function toggle(i) {
+  const at = selected.indexOf(i);
+  if (at >= 0) {
+    selected.splice(at, 1);
+    if (lieIndex === i) lieIndex = -1;
+  } else {
+    if (selected.length >= 3) return toast('最多选 3 条');
+    selected.push(i);
+    lieIndex = i;
+  }
+  renderPool();
+}
+
+function submitProfile() {
+  showJ('s3');
+  renderMembersJ();
+  $('actionBar').innerHTML = '<div class="muted center">已提交，等待房主开始…</div>';
+  $('nameInput') && ($('nameInput').disabled = true);
+  // 演示：3 秒后自动进入「轮到你开讲」
+  setTimeout(() => {
+    showJ('s4');
+    $('yourTurn').style.display = '';
+    $('yourTags').innerHTML = selected.map(i => `<div style="padding:7px 0;font-size:14px">${pool[i].e} ${pool[i].t}</div>`).join('');
+  }, 2600);
+  setTimeout(() => { showJ('s5'); $('resultBox').innerHTML = resultHTML(); }, 7000);
+}
+
+function resultHTML() {
+  let html = '<div class="muted center" style="margin-bottom:12px">这局挖到的真实情报</div>';
+  allMembers.forEach(m => {
+    const p = poolFor(m.name);
+    const chips = p.slice(0, 2).map(x => `<span style="display:inline-block;background:#fff8f2;border:1px solid #f0dcc6;border-radius:20px;padding:4px 10px;font-size:12px;margin:3px 3px 0 0">${x.e} ${x.t}</span>`).join('');
+    html += `<div style="padding:10px 0;border-bottom:1px dashed var(--line)">
+      <div style="font-size:15px;font-weight:800">🎭 ${m.name}</div>
+      <div style="margin-top:6px">${chips}</div></div>`;
+  });
+  return html;
+}
+</script>
+
+</body>
+</html>
