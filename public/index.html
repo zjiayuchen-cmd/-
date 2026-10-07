@@ -234,6 +234,23 @@ body { background: radial-gradient(1200px 800px at 20% 0%, #2c2540 0%, var(--bg)
   .hint { font-size: 12.5px; color: var(--muted); line-height: 1.6; margin-top: 10px; }
   .counter { text-align: center; font-size: 13px; font-weight: 800; margin-top: 14px; }
   .counter b { color: var(--primary); font-size: 18px; }
+  .picked { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .picked-item { display: flex; align-items: center; gap: 9px; background: #fff; border: 2px solid var(--line); border-radius: 14px; padding: 10px 12px; font-size: 13.5px; font-weight: 700; cursor: pointer; transition: all .2s ease; }
+  .picked-item .pe { font-size: 20px; }
+  .picked-item .pt { flex: 1; }
+  .picked-item.active { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(255,107,94,.15); }
+  .picked-item .tagbadge { font-size: 11px; font-weight: 900; padding: 3px 9px; border-radius: 12px; flex-shrink: 0; }
+  .picked-item .tagbadge.lie { background: var(--primary); color: #fff; }
+  .picked-item .tagbadge.truth { background: rgba(46,196,166,.15); color: var(--accent); }
+  .pitem.added { opacity: .45; border-style: dashed; }
+  .emojipick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .epick { font-size: 20px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--line); border-radius: 10px; cursor: pointer; background: #fff; transition: all .15s ease; }
+  .epick.on { border-color: var(--primary); background: rgba(255,107,94,.08); }
+  .truthbar { display: flex; gap: 9px; margin-top: 12px; }
+  .truthbar .btn { flex: 1; width: auto; padding: 14px; font-size: 14px; }
+  .truthbar .btn + .btn { margin-top: 0; }
+  .liebtn { background: var(--primary); }
+  .truthbtn { background: var(--accent); }
   .gate { text-align:center; padding-top: 26px; }
   .phase-box { text-align: center; padding: 30px 10px; }
   .phase-box .e { font-size: 60px; display: block; margin-bottom: 14px; animation: floaty 2.4s ease-in-out infinite; }
@@ -271,6 +288,7 @@ body { background: radial-gradient(1200px 800px at 20% 0%, #2c2540 0%, var(--bg)
 .qimage img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .qimage.loading { display: flex; align-items: center; justify-content: center; color: #a99fba; font-size: 14px; text-align: center; padding: 20px; }
 </style>
+<script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
 
@@ -327,7 +345,7 @@ body { background: radial-gradient(1200px 800px at 20% 0%, #2c2540 0%, var(--bg)
           <div class="qrframe"><canvas id="qrCv" width="380" height="380" style="width:190px;height:190px;display:block"></canvas></div>
           <div class="qrtext">
             手机扫码 → 输入名字 → 选 3 句自我介绍（<b>2 真 1 假</b>）<br>
-            <b>不用下载任何 App</b>，微信/浏览器直接打开<br>
+            <b>不用下载任何 App</b>，请用手机<b>自带浏览器</b>打开（<b>勿用微信</b>）<br>
             也可以手动输房间码加入
             <div class="url" id="joinUrl"></div>
           </div>
@@ -372,8 +390,7 @@ body { background: radial-gradient(1200px 800px at 20% 0%, #2c2540 0%, var(--bg)
       </div>
       <div class="hostbar">
         <button class="btn accent" id="btnReveal" onclick="doReveal()">揭晓答案 ✨</button>
-        <button class="btn" id="btnEgg" style="display:none" onclick="doEgg()">彩蛋 · 两真一假 🎒</button>
-        <button class="btn" id="btnNext" style="display:none" onclick="nextQ()">下一题 →</button>
+        <button class="btn" id="btnNext" style="display:none" onclick="nextItem()">下一题 →</button>
         <div class="hint" id="roomHint"></div>
       </div>
     </div>
@@ -409,13 +426,33 @@ body { background: radial-gradient(1200px 800px at 20% 0%, #2c2540 0%, var(--bg)
     <!-- 步骤2：选自我介绍 -->
     <div id="s2" style="display:none">
       <div class="center">
-        <div style="font-size:30px">🎒</div>
-        <div style="font-size:18px;font-weight:900;margin-top:8px">让大家认识你</div>
-        <p class="muted" style="margin-top:6px">勾选 <b>2 条真实的</b> + <b>1 条编的</b><br>待会儿大家要猜哪条是假的</p>
+        <div style="font-size:28px">🎒</div>
+        <div style="font-size:18px;font-weight:900;margin-top:6px">让大家认识你</div>
+        <p class="muted" style="margin-top:4px">选 <b>3 条</b>（2 真 + 1 假），点选一条后用下方按钮指定真假</p>
       </div>
       <div class="counter" id="counter">已选 <b>0</b> / 3</div>
+
+      <div class="picked" id="picked"></div>
+
+      <div class="center" style="margin:12px 0 4px">
+        <button class="btn ghost" style="width:auto;padding:10px 18px" onclick="openCustom()">＋ 自定义一条</button>
+      </div>
+      <div id="customBox" style="display:none">
+        <input type="text" id="customText" maxlength="24" placeholder="输入关于你自己的事（最多 24 字）">
+        <div class="hint" style="text-align:right;margin-top:4px" id="customCount">0 / 24</div>
+        <div class="emojipick" id="emojiPick"></div>
+        <div style="margin-top:10px;display:flex;gap:9px">
+          <button class="btn" style="flex:1;padding:12px" onclick="addCustom()">加入</button>
+          <button class="btn ghost" style="flex:1;padding:12px" onclick="closeCustom()">取消</button>
+        </div>
+      </div>
+
       <div class="pool" id="pool"></div>
-      <p class="hint">💡 最后一个勾选的会默认为「假」——想指定哪条是假的，就最后勾它</p>
+
+      <div class="truthbar" id="truthBar" style="display:none">
+        <button class="btn liebtn" onclick="markLie()">❌ 选中的是假的</button>
+        <button class="btn truthbtn" onclick="markTruth()">✅ 选中的是真的</button>
+      </div>
     </div>
 
     <!-- 等待中 -->
@@ -462,36 +499,12 @@ body { background: radial-gradient(1200px 800px at 20% 0%, #2c2540 0%, var(--bg)
 
 <div class="toast" id="toast"></div>
 
-<!-- 设置按钮 -->
-<button class="gx-gear on" id="gearBtn" onclick="openSettings()" title="API 设置">⚙️</button>
-
-<!-- 设置面板 -->
-<div class="gx-modal" id="settingsModal">
-  <div class="gx-sheet">
-    <h2>⚙️ API 设置</h2>
-    <div class="sub">填入两个 API 的密钥与模型名，保存在本机浏览器（localStorage），不上传。</div>
-    <div class="gx-field">
-      <label>🧠 DeepSeek —— 生成生图提示词</label>
-      <input type="text" id="dsKey" placeholder="API Key（sk-...）" autocomplete="off">
-      <input type="text" id="dsModel" placeholder="模型名（默认 deepseek-chat）" autocomplete="off">
-    </div>
-    <div class="gx-sep"></div>
-    <div class="gx-field">
-      <label>🎨 Seedream —— 生图（火山方舟）</label>
-      <input type="text" id="sdKey" placeholder="API Key（火山方舟 Ark）" autocomplete="off">
-      <input type="text" id="sdModel" placeholder="模型 ID（如 doubao-seedream-5-0-pro-260628）" autocomplete="off">
-    </div>
-    <button class="btn" onclick="saveSettings()">保存</button>
-    <button class="btn ghost" style="margin-top:10px" onclick="closeSettings()">取消</button>
-  </div>
-</div>
 
 <!-- ==================== 演示导航：仅此单文件版提供 ==================== -->
 <div class="gx-bar">
   <button id="navHome" onclick="gxGo('home')">🏠 首页</button>
   <button id="navHost" onclick="gxGo('host')">🖥️ 主持屏</button>
   <button id="navJoin" onclick="gxGo('join')">📱 手机加入</button>
-  <button onclick="gxGo('host');gxJumpDemo()">⚡ 一键演示</button>
 </div>
 
 <script>
@@ -644,7 +657,6 @@ function gxGo(page) {
   ['home', 'host', 'join'].forEach(p => document.getElementById('pg' + p[0].toUpperCase() + p.slice(1)).classList.toggle('on', p === page));
   ['home', 'host', 'join'].forEach(p => document.getElementById('nav' + p[0].toUpperCase() + p.slice(1)).classList.toggle('on', p === page));
   document.body.style.background = PAGE_TYPE[page] || 'var(--paper)';
-  $('gearBtn').classList.toggle('on', page === 'home');
   window.scrollTo(0, 0);
   if (page === 'host' && !window.__hostInited) { window.__hostInited = true; HOST_INIT(); }
   if (page === 'join' && !window.__joinInited) { window.__joinInited = true; JOIN_INIT(); }
@@ -693,9 +705,12 @@ function drawQR(canvas, text) {
 </script>
 
 <script>
-/* ======================= 主持屏逻辑（单文件演示版） ======================= */
-let ws = null, code = '', questions = [], qIndex = -1, revealed = false;
+/* ======================= 主持屏逻辑（联网版） ======================= */
+let code = '', questions = [], revealed = false;
+let round = 0, rIdx = -1, questionsReady = false, round1Done = false, revealTimer = null;
 let sessionMembers = [];
+let socket = null;
+let genStatus = [];
 
 function $(id) { return document.getElementById(id); }
 function toast(m) {
@@ -708,30 +723,52 @@ function show(id) {
 }
 
 function HOST_INIT() {
-  code = String(Math.floor(1000 + Math.random() * 9000));
-  $('codeTxt').textContent = code;
-  const joinUrl = location.origin + location.pathname + '?code=' + code;
-  $('joinUrl').textContent = joinUrl;
-  if (!drawQR($('qrCv'), joinUrl)) {
-    $('qrCv').outerHTML = '<div style="color:#8d84a0;font-size:12px;width:190px;text-align:center;padding-top:70px">二维码生成失败<br>请手动输入房间码</div>';
-  }
-  show('viewLobby');
-  renderMembers([]);
-  $('phaseTxt').textContent = '等待加入';
-  // 演示：自动加入 4 位组员
-  let i = 0;
-  const names = Object.keys(PACK.demo);
-  const timer = setInterval(() => {
-    if (i >= names.length) { clearInterval(timer); return; }
-    const n = names[i++];
-    sessionMembers.push({ id: 'm' + i, name: n, emoji: PACK.demo[n].color, color: PACK.demo[n].color, hasProfile: false });
-    renderMembers(sessionMembers);
-    setTimeout(() => { const m = sessionMembers[sessionMembers.length - 1]; if (m) { m.hasProfile = true; renderMembers(sessionMembers); } }, 700);
-  }, 850);
+  socket = io();
+  socket.on('host-created', (d) => {
+    code = d.code;
+    const urls = [];
+    const pushUrl = (ip) => {
+      if (!ip) return;
+      const u = 'http://' + ip + ':' + d.port + '/?code=' + code;
+      if (!urls.includes(u)) urls.push(u);
+    };
+    pushUrl(d.lanIP);
+    (d.ips || []).forEach(pushUrl);
+    const joinUrl = urls[0] || ('http://localhost:' + d.port + '/?code=' + code);
+    $('codeTxt').textContent = code;
+    $('joinUrl').innerHTML = urls.map((u, i) => '<div>' + (i === 0 ? '' : '备选：') + u + '</div>').join('');
+    if (!drawQR($('qrCv'), joinUrl)) {
+      $('qrCv').outerHTML = '<div style="color:#8d84a0;font-size:12px;width:190px;text-align:center;padding-top:70px">二维码生成失败<br>请手动输入房间码</div>';
+    }
+    show('viewLobby');
+    renderMembers([]);
+    $('phaseTxt').textContent = '等待加入';
+  });
+  socket.on('members', (list) => { sessionMembers = list; renderMembers(list); });
+  socket.on('gen-progress', (p) => {
+    let g = genStatus.find((s) => s.name === p.name);
+    if (!g) { g = { name: p.name, state: 'working', step: '', msg: '' }; genStatus.push(g); }
+    g.state = p.state;
+    if (p.step) g.step = p.step;
+    g.msg = p.msg || '';
+    renderGenPipeline();
+    if (p.state === 'error') toast('「' + p.name + '」生成失败：' + (p.msg || ''));
+  });
+  socket.on('gen-error', (msg) => {
+    if (revealTimer) { clearTimeout(revealTimer); revealTimer = null; }
+    show('viewGen'); $('phaseTxt').textContent = '未配置';
+    $('pipeline').innerHTML = '<div class="pstep on"><span class="ck" style="color:var(--primary)">⚠️</span><span class="lb">' + msg + '</span></div>';
+  });
+  socket.on('game-started', (d) => {
+    questions = d.questions;
+    questionsReady = true;
+    if (round1Done) startRound2();
+  });
+  socket.emit('host-create');
 }
 
 function renderMembers(list) {
-  const withProfile = list.filter(m => m.hasProfile).length;
+  const withProfile = list.filter(m => m.profile && m.profile.length >= 3).length;
   $('cntTxt').textContent = list.length ? `${list.length} 人（${withProfile} 人已填自我介绍）` : '';
   if (!list.length) {
     $('mlist').innerHTML = '<div class="empty">等待组员扫码加入…</div>';
@@ -742,7 +779,7 @@ function renderMembers(list) {
     `<div class="mcard">
       <div class="av" style="background:${m.color}33">${m.emoji}</div>
       <div class="nm">${m.name}</div>
-      <div class="tag ${m.hasProfile ? 'ok' : ''}">${m.hasProfile ? '已就绪 ✓' : '待填写'}</div>
+      <div class="tag ok">已就绪 ✓</div>
     </div>`).join('');
   renderStartBtn(list);
 }
@@ -753,7 +790,7 @@ function renderStartBtn(list) {
     bar = document.createElement('div');
     bar.className = 'hostbar startbar';
     $('viewLobby').appendChild(bar);
-    bar.innerHTML = '<button class="btn" id="btnStart" onclick="doStart()">开始生成 🪄</button><div class="hint" id="sh"></div>';
+    bar.innerHTML = '<button class="btn" id="btnStart" onclick="doStart()">开始游戏 🎬</button><div class="hint" id="sh"></div>';
   }
   const btn = $('btnStart');
   btn.disabled = list.length === 0;
@@ -761,120 +798,146 @@ function renderStartBtn(list) {
   $('sh').textContent = list.length === 0 ? '至少 1 人加入' : '';
 }
 
-/* ---- 生成流程（真实调用 DeepSeek + Seedream） ---- */
-async function doStart() {
-  const cfg = getSettings();
-  if (!cfg.dsKey || !cfg.sdKey) {
-    show('viewGen');
-    $('phaseTxt').textContent = '未配置';
-    $('pipeline').innerHTML = '<div class="pstep on"><span class="ck" style="color:var(--primary)">⚠️</span><span class="lb">尚未配置 API —— 请点左上角 ⚙️ 填入两个 API Key</span></div>';
-    return;
-  }
-  const live = sessionMembers.length ? sessionMembers.slice() : Object.keys(PACK.demo).map((n, i) => ({ id: 'd' + i, name: n }));
-  show('viewGen');
-  $('phaseTxt').textContent = '生成中';
+/* ---- 生成流程（由服务端调用 DeepSeek + Seedream，后台进行） ---- */
+function doStart() {
+  show('viewPlay');
+  round = 1; rIdx = -1;
+  round1Done = false; questionsReady = false;
   questions = [];
   genStatus = [];
-  renderGenPipeline();
-  for (let i = 0; i < live.length; i++) {
-    const m = live[i];
-    genStatus.push({ name: m.name, state: 'working', msg: '' });
-    renderGenPipeline();
-    try {
-      const q = await buildImageQuestion(m.name);
-      q.emoji = DEMO_EMOJI[m.name] || '🎭';
-      q.profile = demoProfile(m.name);
-      questions.push(q);
-      genStatus[i].state = 'done';
-    } catch (e) {
-      genStatus[i].state = 'error';
-      genStatus[i].msg = String(e.message || e);
-      renderGenPipeline();
-      toast('「' + m.name + '」生成失败：' + genStatus[i].msg);
-      return;
-    }
-    renderGenPipeline();
-  }
-  $('pipeline').insertAdjacentHTML('beforeend', '<div class="pstep on done-all"><span class="ck">✓</span><span class="lb">全部就绪，可以开始竞猜</span></div>');
-  setTimeout(() => { show('viewPlay'); $('phaseTxt').textContent = '进行中'; qIndex = -1; nextQ(); }, 600);
+  socket.emit('start-game');
+  nextRound1();
 }
-let genStatus = [];
+
+const STEP_LABEL = { deepseek: '① 正在拆名字写提示词…', seedream: '② 正在画图…' };
 function renderGenPipeline() {
   let html = '<div class="pstep on"><span class="ck">✓</span><span class="lb">收取名字与自我介绍</span></div>';
   genStatus.forEach(s => {
-    const icon = s.state === 'done' ? '<span class="ck">✓</span>'
-      : s.state === 'error' ? '<span class="ck" style="color:var(--primary)">✗</span>'
-      : '<div class="sp"></div>';
-    const msg = s.msg ? `<span class="els" style="color:var(--primary)">${s.msg}</span>` : '';
-    html += `<div class="pstep on">${icon}<span class="lb">${s.name}</span>${msg}</div>`;
+    if (s.state === 'done') {
+      html += `<div class="pstep on"><span class="ck">✓</span><span class="lb">${s.name}</span></div>`;
+    } else if (s.state === 'error') {
+      html += `<div class="pstep on"><span class="ck" style="color:var(--primary)">✗</span><span class="lb">${s.name}</span><span class="els" style="color:var(--primary)">${s.msg}</span></div>`;
+    } else {
+      html += `<div class="pstep on"><div class="sp"></div><span class="lb">${s.name}</span><span class="els">${STEP_LABEL[s.step] || '生成中…'}</span></div>`;
+    }
   });
   $('pipeline').innerHTML = html;
 }
 
-/* ---- 演示：两真一假自我介绍 ---- */
-function demoProfile(name, q) {
-  const p = poolFor(name);
-  const lie = hashName(name) % 3;
-  return [0, 1, 2].map(i => ({ e: p[i].e, t: p[i].t, lie: i === lie }));
+function setQhead(lbl, big, hint) {
+  const q = document.querySelector('.qhead');
+  if (q) {
+    q.querySelector('.lbl').textContent = lbl;
+    q.querySelector('.big').textContent = big;
+    q.querySelector('.hintline').textContent = hint;
+  }
+}
+function setEggTtl(ttl, sub) {
+  const e = $('egg');
+  if (e) {
+    e.querySelector('.ttl').textContent = ttl;
+    e.querySelector('.sub').textContent = sub;
+  }
 }
 
-/* ==================== 出题渲染 ==================== */
-function nextQ() {
-  qIndex++;
-  if (qIndex >= questions.length) return finish();
+/* ==================== 第一轮：两真一假（先于图片） ==================== */
+function nextRound1() {
+  if (revealTimer) { clearTimeout(revealTimer); revealTimer = null; }
+  rIdx++;
+  if (rIdx >= sessionMembers.length) {
+    round1Done = true;
+    if (questionsReady) startRound2();
+    else {
+      $('cards').innerHTML = '<div class="qimage loading">🖼️ 图片生成中，马上进入看脸猜名…</div>';
+      $('answer').classList.remove('show');
+      $('egg').classList.remove('show');
+      $('mic').classList.remove('show');
+      $('btnReveal').style.display = 'none';
+      $('btnNext').style.display = 'none';
+      setQhead('看脸猜名 · 第二轮', '图片马上就好', '⏳ 正在用 AI 生成画像');
+      $('phaseTxt').textContent = '图片生成中…';
+    }
+    return;
+  }
+  const m = sessionMembers[rIdx];
+  const prof = m.profile || [];
+  $('dots').innerHTML = sessionMembers.map((_, i) =>
+    `<div class="dot ${i < rIdx ? 'past' : ''} ${i === rIdx ? 'now' : ''}"></div>`).join('');
+  $('cards').innerHTML = '';
+  $('answer').classList.remove('show');
+  $('mic').classList.remove('show');
+  $('btnReveal').style.display = 'none';
+  $('btnNext').style.display = 'none';
+  setQhead('两真一假 · 第一轮', m.name + ' 的三句话', '2 真 1 假，猜哪句是假的？');
+  setEggTtl('🎒 关于 ' + m.name + '，有一句是编的', 'TA 选了 3 句自我介绍 — 2 真 1 假');
+  $('eggCards').innerHTML = prof.map(p =>
+    `<div class="eggc"><div class="e">${p.e}</div><div class="t">${p.t}</div><div class="m">押这句？</div></div>`).join('');
+  $('egg').classList.add('show');
+  $('phaseTxt').textContent = `第一轮 · 两真一假 ${rIdx + 1}/${sessionMembers.length}`;
+  socket.emit('host-egg', { name: m.name, profile: prof });
+  // 信息出现 5 秒后再揭示真假
+  revealTimer = setTimeout(() => {
+    const cards = document.querySelectorAll('#eggCards .eggc');
+    prof.forEach((p, i) => {
+      if (!cards[i]) return;
+      cards[i].classList.add(p.lie ? 'lie' : 'truth');
+      cards[i].querySelector('.m').textContent = p.lie ? '假的！' : '真的 ✓';
+    });
+    $('mic').innerHTML = `🎤 轮到 <b>${m.name}</b> 本人开讲：挑一句真的展开说说（30 秒），大家随便追问 👀`;
+    $('mic').classList.add('show');
+    $('btnNext').style.display = '';
+    $('btnNext').textContent = rIdx === sessionMembers.length - 1 ? '进入看脸猜名 🎭' : '下一位 →';
+    $('btnNext').onclick = nextItem;
+  }, 5000);
+}
+
+/* ==================== 第二轮：看脸猜名 ==================== */
+function startRound2() {
+  round = 2; rIdx = -1;
+  if (revealTimer) { clearTimeout(revealTimer); revealTimer = null; }
+  $('phaseTxt').textContent = '第二轮 · 看脸猜名';
+  nextRound2();
+}
+
+function nextRound2() {
+  rIdx++;
+  if (rIdx >= questions.length) return finish();
   revealed = false;
-  const q = questions[qIndex];
-
+  const q = questions[rIdx];
   $('dots').innerHTML = questions.map((_, i) =>
-    `<div class="dot ${i < qIndex ? 'past' : ''} ${i === qIndex ? 'now' : ''}"></div>`).join('');
-
+    `<div class="dot ${i < rIdx ? 'past' : ''} ${i === rIdx ? 'now' : ''}"></div>`).join('');
   $('cards').innerHTML = q.image
     ? `<div class="qimage"><img src="${q.image}" alt="猜猜是谁"></div>`
     : `<div class="qimage loading">图片生成失败</div>`;
-
   $('answer').classList.remove('show');
   $('egg').classList.remove('show');
   $('mic').classList.remove('show');
   $('btnReveal').style.display = '';
   $('btnReveal').disabled = false;
-  $('btnEgg').style.display = 'none';
   $('btnNext').style.display = 'none';
-  $('phaseTxt').textContent = `进行中 ${qIndex + 1}/${questions.length}`;
+  setQhead('看脸猜名 · 第二轮', '这一张图，代表一个人的名字', '🗣️ 让大家用嘴抢答，不要点屏幕');
+  $('phaseTxt').textContent = `第二轮 · 看脸猜名 ${rIdx + 1}/${questions.length}`;
+  socket.emit('host-next-question', { index: rIdx, total: questions.length });
+}
+
+function nextItem() {
+  if (round === 1) nextRound1();
+  else if (round === 2) nextRound2();
 }
 
 function doReveal() {
   if (revealed) return;
   revealed = true;
-  const q = questions[qIndex];
+  const q = questions[rIdx];
   $('btnReveal').style.display = 'none';
-
   $('aWho').textContent = '就是 —— ' + q.name + '！';
-  // 第二段：拆字解释，揭晓后显示在图片下方
   $('aWhy').textContent = q.sec2 || '';
   $('aWhy').style.display = q.sec2 ? '' : 'none';
   $('answer').classList.add('show');
-  $('btnEgg').style.display = '';
-}
-
-function doEgg() {
-  const q = questions[qIndex];
-  $('btnEgg').style.display = 'none';
-  $('eggCards').innerHTML = q.profile.map(p =>
-    `<div class="eggc"><div class="e">${p.e}</div><div class="t">${p.t}</div><div class="m">押这句？</div></div>`).join('');
-  $('egg').classList.add('show');
-
-  setTimeout(() => {
-    const cards = document.querySelectorAll('#eggCards .eggc');
-    q.profile.forEach((p, i) => {
-      if (!cards[i]) return;
-      cards[i].classList.add(p.lie ? 'lie' : 'truth');
-      cards[i].querySelector('.m').textContent = p.lie ? '假的！' : '真的 ✓';
-    });
-    $('mic').innerHTML = `🎤 轮到 <b>${q.name}</b> 本人开讲：挑一句真的展开说说（30 秒），大家随便追问 👀`;
-    $('mic').classList.add('show');
-    $('btnNext').style.display = '';
-    $('btnNext').textContent = qIndex === questions.length - 1 ? '查看结果 🎉' : '下一题 →';
-  }, 900);
+  $('btnNext').style.display = '';
+  $('btnNext').textContent = rIdx === questions.length - 1 ? '查看结果 🎉' : '下一题 →';
+  $('btnNext').onclick = nextItem;
+  socket.emit('host-reveal', { name: q.name, sec2: q.sec2 || '' });
 }
 
 function finish() {
@@ -896,21 +959,24 @@ function finish() {
     </div>`;
   });
   $('resultBody').innerHTML = html;
+  socket.emit('host-finish');
 }
 
 function gxReset() {
-  sessionMembers = []; questions = []; qIndex = -1; window.__hostInited = true;
-  HOST_INIT();
+  sessionMembers = []; questions = []; genStatus = [];
+  round = 0; rIdx = -1; questionsReady = false; round1Done = false;
+  if (revealTimer) { clearTimeout(revealTimer); revealTimer = null; }
+  socket.emit('host-create');
 }
 window.gxReset = gxReset;
-window.gxJumpDemo = function () { };   // 进入主持屏即自动演示
 </script>
 
 <script>
-/* ======================= 手机加入逻辑（内联演示版） ======================= */
+/* ======================= 手机加入逻辑（联网版） ======================= */
 let myId = '', myName = '';
-let pool = [], selected = [], lieIndex = -1;
+let pool = [], picked = [], activeIdx = -1, customEmoji = '⭐';
 let allMembers = [];
+const EMOJI_OPTIONS = ['⭐','🎨','🎮','🎵','⚽','🏀','📚','✈️','🍜','🍰','☕','🐱','🐶','🌵','🌈','🎬','💻','🧗','🏊','🎤','📷','🧘','🚴','🎸'];
 
 function showJ(id) {
   ['s1', 's2', 's3', 's4', 's5'].forEach(s => $(s).style.display = 'none');
@@ -918,6 +984,75 @@ function showJ(id) {
 }
 
 function JOIN_INIT() {
+  socket = io();
+
+  $('customText').addEventListener('input', () => {
+    $('customCount').textContent = $('customText').value.length + ' / 24';
+  });
+
+  socket.on('room-ok', () => {
+    showJ('s1');
+    $('s1').innerHTML = `
+      <h1 class="logo">名场面</h1>
+      <p class="muted center" style="margin-top:8px">输入你的名字，加入这场猜谜</p>
+      <span class="emoji-big">🎭</span>
+      <input type="text" id="nameInput" placeholder="你的名字（真名最好，大家要记的就是它）" maxlength="8">
+      <p class="hint center" id="errBox" style="color:var(--primary);min-height:18px"></p>`;
+    $('actionBar').innerHTML = `<button class="btn" onclick="joinNow()">加入房间 ${code}</button>`;
+    $('nameInput').focus();
+    $('nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinNow(); });
+  });
+  socket.on('room-bad', (msg) => { if ($('errBox2')) $('errBox2').textContent = msg; });
+  socket.on('join-error', (msg) => toast(msg));
+
+  socket.on('joined', (d) => {
+    myId = d.selfId;
+    allMembers = d.members;
+    showJ('s3');
+    renderMembersJ();
+    $('actionBar').innerHTML = '<div class="muted center">已提交，等待房主开始…</div>';
+    const ni = $('nameInput'); if (ni) ni.disabled = true;
+  });
+  socket.on('members', (list) => { allMembers = list; if (myId) renderMembersJ(); });
+
+  socket.on('question', (d) => {
+    showJ('s3');
+    const box = document.querySelector('#s3 .phase-box');
+    if (box) box.innerHTML = '<span class="e">🖼️</span><div class="t">第 ' + (d.index + 1) + ' / ' + d.total + ' 题</div><div class="s">抬头看大屏，用嘴抢答！</div>';
+    $('actionBar').innerHTML = '<div class="muted center">游戏中…</div>';
+  });
+  socket.on('reveal', (d) => {
+    showJ('s4');
+    const box = document.querySelector('#s4 .phase-box');
+    if (box) box.innerHTML = '<span class="e">🎉</span><div class="t">就是 —— ' + d.name + '！</div><div class="s">' + (d.sec2 || '') + '</div>';
+    const yt = $('yourTurn'); if (yt) yt.style.display = 'none';
+    $('actionBar').innerHTML = '<div class="muted center">等主持人继续…</div>';
+  });
+  socket.on('egg', (d) => {
+    showJ('s5');
+    const box = document.querySelector('#s5 .phase-box');
+    if (box) box.innerHTML = '<span class="e">👀</span><div class="t">猜哪句是假的？</div><div class="s">抬头看大屏，房主马上揭晓</div>';
+    const lines = (d.profile || []).map(p => `<div style="padding:6px 0;font-size:14px;border-bottom:1px dashed var(--line)">${p.e} ${p.t}</div>`).join('');
+    $('resultBox').innerHTML = '<div class="muted center" style="margin-bottom:10px">' + d.name + ' 的三句自我介绍</div>' + lines;
+    $('actionBar').innerHTML = '<div class="muted center">听 ' + d.name + ' 开讲 👀</div>';
+  });
+  socket.on('game-over', (d) => {
+    allMembers = d.members || allMembers;
+    showJ('s5');
+    const box = document.querySelector('#s5 .phase-box');
+    if (box) box.innerHTML = '<span class="e">🎉</span><div class="t">全部猜完！</div><div class="s">现在，试着叫出每个人的名字吧</div>';
+    $('resultBox').innerHTML = resultHTML();
+    $('actionBar').innerHTML = '<div class="muted center">感谢参与！</div>';
+  });
+  socket.on('host-left', () => {
+    myId = '';
+    picked = []; activeIdx = -1;
+    toast('房主已结束房间');
+    showJ('s1');
+    $('s1').innerHTML = '<h1 class="logo">名场面</h1><p class="muted center" style="margin-top:8px">房间已结束</p><span class="emoji-big">👋</span>';
+    $('actionBar').innerHTML = '';
+  });
+
   const params = new URLSearchParams(location.search);
   const qcode = params.get('code') || '';
   $('s1').innerHTML = `
@@ -925,38 +1060,30 @@ function JOIN_INIT() {
     <p class="muted center" style="margin-top:8px">输入房间码加入</p>
     <span class="emoji-big">🔢</span>
     <input type="text" class="code" id="codeInput" placeholder="0000" maxlength="4" inputmode="numeric">
-    <p class="hint center" style="color:var(--primary);min-height:18px" id="errBox2">${qcode ? '房间码 ' + qcode + '（本机演示可直接下一步）' : ''}</p>`;
+    <p class="hint center" style="color:var(--primary);min-height:18px" id="errBox2"></p>`;
   if (qcode) $('codeInput').value = qcode;
   $('actionBar').innerHTML = '<button class="btn" onclick="goCode()">下一步</button>';
   $('codeInput').addEventListener('keydown', e => { if (e.key === 'Enter') goCode(); });
+  if (qcode) goCode();
 }
 
 function goCode() {
   const v = ($('codeInput').value || '').trim();
   if (!/^\d{4}$/.test(v)) { $('errBox2').textContent = '请输入 4 位房间码'; return; }
   code = v;
-  showJ('s1');
-  $('s1').innerHTML = `
-    <h1 class="logo">名场面</h1>
-    <p class="muted center" style="margin-top:8px">输入你的名字，加入这场猜谜</p>
-    <span class="emoji-big">🎭</span>
-    <input type="text" id="nameInput" placeholder="你的名字（真名最好，大家要记的就是它）" maxlength="8">
-    <p class="hint center" id="errBox" style="color:var(--primary);min-height:18px"></p>`;
-  $('actionBar').innerHTML = `<button class="btn" onclick="joinNow()">加入房间 ${code}</button>`;
-  $('nameInput').focus();
-  $('nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinNow(); });
+  socket.emit('check-room', { code });
 }
 
 function joinNow() {
   const n = ($('nameInput').value || '').trim();
   if (!n) { $('errBox').textContent = '请输入名字'; return; }
-  myName = n; myId = 'me';
+  myName = n;
   pool = poolFor(n);
-  renderPool();
+  picked = []; activeIdx = -1;
+  closeCustom();
   showJ('s2');
   $('actionBar').innerHTML = '<button class="btn" id="sb" disabled onclick="submitProfile()">提交</button>';
-  allMembers = Object.keys(PACK.demo).map((nm, i) => ({ id: 'm' + (i + 1), name: nm, emoji: '🎉', color: '#ff6b5e' }));
-  allMembers.push({ id: 'me', name: n, emoji: '🙋', color: '#2ec4a6' });
+  renderPicked(); renderPool(); renderCounter();
 }
 
 function renderMembersJ() {
@@ -967,238 +1094,113 @@ function renderMembersJ() {
     </div>`).join('');
 }
 
-function renderPool() {
-  $('pool').innerHTML = pool.map((p, i) => {
-    const sel = selected.includes(i);
-    return `<div class="pitem ${sel ? 'sel' : ''} ${lieIndex === i ? 'lie' : ''}" onclick="toggle(${i})">
-      <span class="mark">假的</span>
-      <span class="pe">${p.e}</span><span>${p.t}</span>
-    </div>`;
-  }).join('');
-  $('counter').innerHTML = '已选 <b>' + selected.length + '</b> / 3';
+function renderCounter() {
+  $('counter').innerHTML = '已选 <b>' + picked.length + '</b> / 3';
   const sb = $('sb');
-  if (sb) { sb.disabled = selected.length !== 3; sb.classList.toggle('breathe', selected.length === 3); }
+  if (sb) { sb.disabled = picked.length !== 3; sb.classList.toggle('breathe', picked.length === 3); }
 }
 
-function toggle(i) {
-  const at = selected.indexOf(i);
-  if (at >= 0) {
-    selected.splice(at, 1);
-    if (lieIndex === i) lieIndex = -1;
-  } else {
-    if (selected.length >= 3) return toast('最多选 3 条');
-    selected.push(i);
-    lieIndex = i;
-  }
-  renderPool();
+function renderPicked() {
+  $('picked').innerHTML = picked.map((p, i) => `
+    <div class="picked-item ${i === activeIdx ? 'active' : ''}" onclick="focusItem(${i})">
+      <span class="pe">${p.e}</span>
+      <span class="pt">${p.t}</span>
+      <span class="tagbadge ${p.lie ? 'lie' : 'truth'}">${p.lie ? '假的' : '真的'}</span>
+      <span style="flex-shrink:0;color:#c7bfd4;font-size:16px;cursor:pointer;padding:0 2px" onclick="removePicked(${i});event.stopPropagation()">✕</span>
+    </div>`).join('') || '<div class="muted center" style="padding:6px 0">还没选：点下面预设，或「＋ 自定义一条」</div>';
+  $('truthBar').style.display = activeIdx >= 0 ? '' : 'none';
+}
+
+function renderPool() {
+  const pickedSet = new Set(picked.map(p => p.e + '\u0001' + p.t));
+  const left = pool.map((p, i) => ({ p, i })).filter(x => !pickedSet.has(x.p.e + '\u0001' + x.p.t));
+  $('pool').innerHTML = left.length
+    ? left.map(x => `<div class="pitem" onclick="addPoolItem(${x.i})">
+        <span class="pe">${x.p.e}</span><span>${x.p.t}</span>
+      </div>`).join('')
+    : '<div class="muted center" style="padding:10px 0">预设的都选完啦，试试「＋ 自定义一条」</div>';
+}
+
+function addPoolItem(i) {
+  const p = pool[i];
+  if (!p) return;
+  if (picked.length >= 3) return toast('最多选 3 条');
+  picked.push({ e: p.e, t: p.t, lie: false });
+  activeIdx = picked.length - 1;
+  renderPicked(); renderPool(); renderCounter();
+}
+
+function focusItem(i) {
+  activeIdx = i;
+  renderPicked();
+}
+
+function removePicked(i) {
+  picked.splice(i, 1);
+  if (activeIdx >= picked.length) activeIdx = picked.length - 1;
+  renderPicked(); renderPool(); renderCounter();
+}
+
+function markLie() {
+  if (activeIdx < 0 || !picked[activeIdx]) return toast('先点选一条信息');
+  picked[activeIdx].lie = true;
+  renderPicked();
+}
+
+function markTruth() {
+  if (activeIdx < 0 || !picked[activeIdx]) return toast('先点选一条信息');
+  picked[activeIdx].lie = false;
+  renderPicked();
+}
+
+function openCustom() {
+  if (picked.length >= 3) return toast('最多选 3 条');
+  customEmoji = '⭐';
+  $('customText').value = '';
+  $('customCount').textContent = '0 / 24';
+  renderEmojiPick();
+  $('customBox').style.display = '';
+  $('customText').focus();
+}
+
+function closeCustom() {
+  $('customBox').style.display = 'none';
+}
+
+function renderEmojiPick() {
+  $('emojiPick').innerHTML = EMOJI_OPTIONS.map(e =>
+    `<div class="epick ${e === customEmoji ? 'on' : ''}" onclick="customEmoji='${e}';renderEmojiPick()">${e}</div>`).join('');
+}
+
+function addCustom() {
+  const t = ($('customText').value || '').trim();
+  if (!t) return toast('先写点什么吧');
+  if (picked.length >= 3) return toast('最多选 3 条');
+  picked.push({ e: customEmoji, t, lie: false });
+  activeIdx = picked.length - 1;
+  closeCustom();
+  renderPicked(); renderPool(); renderCounter();
 }
 
 function submitProfile() {
-  showJ('s3');
-  renderMembersJ();
-  $('actionBar').innerHTML = '<div class="muted center">已提交，等待房主开始…</div>';
-  $('nameInput') && ($('nameInput').disabled = true);
-  // 演示：3 秒后自动进入「轮到你开讲」
-  setTimeout(() => {
-    showJ('s4');
-    $('yourTurn').style.display = '';
-    $('yourTags').innerHTML = selected.map(i => `<div style="padding:7px 0;font-size:14px">${pool[i].e} ${pool[i].t}</div>`).join('');
-  }, 2600);
-  setTimeout(() => { showJ('s5'); $('resultBox').innerHTML = resultHTML(); }, 7000);
+  if (picked.length !== 3) return toast('请选满 3 条');
+  const lies = picked.filter(p => p.lie).length;
+  if (lies !== 1) return toast('请用下方按钮指定 1 条假信息（其余 2 条为真）');
+  const profile = picked.map((p) => ({ e: p.e, t: p.t, lie: p.lie }));
+  socket.emit('join-room', { code, name: myName, profile });
+  $('actionBar').innerHTML = '<div class="muted center">正在加入…</div>';
 }
 
 function resultHTML() {
   let html = '<div class="muted center" style="margin-bottom:12px">这局挖到的真实情报</div>';
   allMembers.forEach(m => {
-    const p = poolFor(m.name);
-    const chips = p.slice(0, 2).map(x => `<span style="display:inline-block;background:#fff8f2;border:1px solid #f0dcc6;border-radius:20px;padding:4px 10px;font-size:12px;margin:3px 3px 0 0">${x.e} ${x.t}</span>`).join('');
+    const truths = (m.profile || []).filter(p => !p.lie);
+    const chips = truths.map(x => `<span style="display:inline-block;background:#fff8f2;border:1px solid #f0dcc6;border-radius:20px;padding:4px 10px;font-size:12px;margin:3px 3px 0 0">${x.e} ${x.t}</span>`).join('');
     html += `<div style="padding:10px 0;border-bottom:1px dashed var(--line)">
       <div style="font-size:15px;font-weight:800">🎭 ${m.name}</div>
-      <div style="margin-top:6px">${chips}</div></div>`;
+      <div style="margin-top:6px">${chips || '<span class="muted" style="font-size:12px">没有提交自我介绍</span>'}</div></div>`;
   });
   return html;
-}
-</script>
-
-<script>
-/* ======================= 设置 + 双 API 生图（新增） ======================= */
-
-/* ---- DeepSeek 提示词模板 ---- */
-const DS_TEMPLATE = `你是一个用于“猜名字”游戏的图像提示词生成器。用户会输入一个中文名字。你只输出两段，不得输出任何额外说明、标题、寒暄、Markdown 代码块或解释。
-
-输出格式必须严格为：
-
-段落一：
-中文提示词：...
-英文提示词：...
-负面提示词：text, letters, Chinese characters, watermark, logo, deformed, bad anatomy, messy composition, low quality, extra limbs
-
-段落二：
-“{{名字}}”可以拆成“字1→词1、字2→词2、...”。其中“字1”与“词1”同音，取“...”；“字2”直接保留在“词2”里；“字3”用会意/拆字/联想，取“...”。
-
-生成规则：
-1. 逐字处理名字。每个字先用会意（字义）、拆字（偏旁/部件）或常见联想转成可画的具体元素；只有存在明显且可靠的同音具体名词时，才用同音替换。同音/近音必须拼音完全相同（忽略声调），例如“王 wáng→汪 wāng”“震 zhèn→珍 zhēn”。严禁把拼音明显不同的字当谐音，例如“佳 jiā”绝不能谐成“带 dài”。
-2. 把所有视觉元素放进同一个连贯、趣味、儿童绘本风格的画面中。
-3. 中文提示词和英文提示词只描述画面，不得出现玩家原名字，不得要求画面出现文字。
-4. 中文提示词包含主体、动作、场景、风格、构图、比例、无文字/水印/logo。英文提示词与中文对应。
-5. 负面提示词永远使用上面固定那串。
-6. 段落二只解释名字到视觉元素的变换，格式紧凑，最多两句话；不解释风格、构图、负面词、质量、seedream、API 等。若某字用的是会意/拆字/联想而非同音，就照实写成“取‘...’”，不要强行声称同音。
-7. 输出前逐字核对：凡写“同音/谐音”的，拼音必须完全相同（忽略声调）；不确定就改用会意、拆字或联想，并照实说明。
-8. 不要输出“好的”“以下是”等多余内容。
-
-示例：
-输入：王金震
-输出：
-段落一：
-中文提示词：儿童绘本风格趣味插画，一只可爱的棕色小狗趴在池塘边，水里一条闪亮的金鱼游动，金鱼旁边有一颗圆润明亮的珍珠，池水清澈，背景是温暖花园，梦幻幽默，色彩鲜艳，居中构图，方形1:1，无文字、无水印、无logo。
-英文提示词：Whimsical children's book illustration: a cute brown puppy lying by a pond, a shiny goldfish swimming in the water, a round bright pearl next to the goldfish, clear pond water, warm garden background, dreamy and humorous, vibrant colors, centered composition, square 1:1, no text, no letters, no watermark, no logo.
-负面提示词：text, letters, Chinese characters, watermark, logo, deformed, bad anatomy, messy composition, low quality, extra limbs.
-段落二：
-“王金震”可以拆成“王→汪、金→金鱼、震→珍”。其中“王”与“汪”同音，取“小狗”；“金”直接保留在“金鱼”里；“震”与“珍”同音，取“珍珠”。
-
-玩家输入的名字是：{{name}}`;
-
-const DS_SYSTEM = DS_TEMPLATE.slice(0, DS_TEMPLATE.indexOf('玩家输入的名字是：{{name}}')).trim();
-const DS_ENDPOINT = 'https://api.deepseek.com/chat/completions';
-const SD_ENDPOINT = 'https://ark.cn-beijing.volces.com/api/v3/images/generations';
-
-/* ---- 设置存取 ---- */
-function getSettings() {
-  try {
-    const s = JSON.parse(localStorage.getItem('gx_api_settings') || '{}');
-    return {
-      dsKey: s.dsKey || '',
-      dsModel: s.dsModel || 'deepseek-chat',
-      sdKey: s.sdKey || '',
-      sdModel: s.sdModel || 'doubao-seedream-5-0-pro-260628'
-    };
-  } catch (e) {
-    return { dsKey: '', dsModel: 'deepseek-chat', sdKey: '', sdModel: 'doubao-seedream-5-0-pro-260628' };
-  }
-}
-function openSettings() {
-  const s = getSettings();
-  $('dsKey').value = s.dsKey;
-  $('dsModel').value = s.dsModel;
-  $('sdKey').value = s.sdKey;
-  $('sdModel').value = s.sdModel;
-  $('settingsModal').classList.add('on');
-}
-function closeSettings() { $('settingsModal').classList.remove('on'); }
-function saveSettings() {
-  const s = {
-    dsKey: $('dsKey').value.trim(),
-    dsModel: $('dsModel').value.trim() || 'deepseek-chat',
-    sdKey: $('sdKey').value.trim(),
-    sdModel: $('sdModel').value.trim() || 'doubao-seedream-5-0-pro-260628'
-  };
-  localStorage.setItem('gx_api_settings', JSON.stringify(s));
-  closeSettings();
-  toast('已保存设置');
-}
-
-/* ---- 解析 DeepSeek 输出（第一段 / 第二段） ---- */
-function parseDeepseek(text) {
-  let t = String(text || '').trim();
-  t = t.replace(/^```[a-zA-Z]*\s*/, '').replace(/\s*```$/, '');
-  const find = (markers) => {
-    let idx = -1, len = 0;
-    for (const m of markers) { const i = t.indexOf(m); if (i >= 0 && (idx < 0 || i < idx)) { idx = i; len = m.length; } }
-    return idx < 0 ? null : { idx, len };
-  };
-  const s2 = find(['段落二', '第二段']);
-  let sec1 = t, sec2 = '';
-  if (s2) {
-    sec1 = t.slice(0, s2.idx);
-    sec2 = t.slice(s2.idx + s2.len).replace(/^[:：]\s*/, '').trim();
-  }
-  const s1 = find(['段落一', '第一段']);
-  if (s1 && (!s2 || s1.idx < s2.idx)) sec1 = sec1.slice(s1.idx + s1.len).replace(/^[:：]\s*/, '').trim();
-  sec1 = sec1.trim();
-  const field = (names) => {
-    for (const n of names) {
-      const i = sec1.indexOf(n);
-      if (i < 0) continue;
-      let rest = sec1.slice(i + n.length).replace(/^[:：]\s*/, '');
-      const nexts = ['中文提示词', '英文提示词', '负面提示词', '段落一', '段落二', '第一段', '第二段'];
-      let end = rest.length;
-      for (const nn of nexts) { const j = rest.indexOf(nn); if (j > 0) end = Math.min(end, j); }
-      return rest.slice(0, end).trim();
-    }
-    return '';
-  };
-  return { cn: field(['中文提示词']), en: field(['英文提示词']), neg: field(['负面提示词']), sec2 };
-}
-function buildImagePrompt(p) {
-  const parts = [];
-  if (p.cn) parts.push(p.cn);
-  if (p.en) parts.push(p.en);
-  if (p.neg) parts.push('avoid: ' + p.neg);
-  return parts.join('\n');
-}
-
-/* ---- 调用两个 API ---- */
-async function deepseekGenerate(name) {
-  const cfg = getSettings();
-  if (!cfg.dsKey) throw new Error('未配置 DeepSeek Key');
-  const resp = await fetch(DS_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.dsKey },
-    body: JSON.stringify({
-      model: cfg.dsModel,
-      messages: [
-        { role: 'system', content: DS_SYSTEM },
-        { role: 'user', content: '玩家输入的名字是：' + name }
-      ],
-      temperature: 0.3,
-      stream: false
-    })
-  });
-  if (!resp.ok) throw new Error('DeepSeek ' + resp.status + ' ' + (await resp.text()).slice(0, 200));
-  const data = await resp.json();
-  const c = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-  if (!c) throw new Error('DeepSeek 返回为空');
-  return c;
-}
-
-async function seedreamGenerate(prompt) {
-  const cfg = getSettings();
-  if (!cfg.sdKey) throw new Error('未配置 Seedream Key');
-  const resp = await fetch(SD_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.sdKey },
-    body: JSON.stringify({
-      model: cfg.sdModel,
-      prompt: prompt,
-      size: '1024x1024',
-      response_format: 'b64_json',
-      watermark: false
-    })
-  });
-  if (!resp.ok) {
-    let detail = '';
-    try { const j = await resp.json(); detail = (j.error && j.error.message) ? j.error.message : JSON.stringify(j); }
-    catch (e) { detail = await resp.text(); }
-    throw new Error('Seedream ' + resp.status + ' ' + String(detail).slice(0, 300));
-  }
-  const data = await resp.json();
-  const item = data && data.data && data.data[0];
-  if (!item) throw new Error('Seedream 未返回图片');
-  if (item.b64_json) {
-    const fmt = String(item.output_format || item.format || '').toLowerCase();
-    return 'data:' + (fmt === 'png' ? 'image/png' : 'image/jpeg') + ';base64,' + item.b64_json;
-  }
-  if (item.url) return item.url;
-  throw new Error('Seedream 返回格式未知');
-}
-
-async function buildImageQuestion(name) {
-  const raw = await deepseekGenerate(name);
-  const p = parseDeepseek(raw);
-  const prompt = buildImagePrompt(p);
-  if (!prompt) throw new Error('提示词解析为空');
-  const image = await seedreamGenerate(prompt);
-  return { name, image, sec2: p.sec2 };
 }
 </script>
 
